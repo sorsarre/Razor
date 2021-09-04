@@ -72,6 +72,7 @@ namespace Assistant
             new StatsTimer(this).Start();
             Language.LoadControlNames(this);
 
+            CounterListManager.SetControls(this, counters);
             FriendsManager.SetControls(friendsGroup, friendsList);
             DressList.SetControls(dressList, dressItems);
             TargetFilterManager.OnItemsChanged += this.RefreshTargetFilters;
@@ -163,25 +164,7 @@ namespace Assistant
                 s.Text = Config.GetInt("LTRange").ToString();
             });
 
-            counters.SafeAction(s =>
-            {
-                s.BeginUpdate();
-
-                if (Config.GetBool("SortCounters"))
-                {
-                    s.Sorting = SortOrder.None;
-                    s.ListViewItemSorter = CounterLVIComparer.Instance;
-                    s.Sort();
-                }
-                else
-                {
-                    s.ListViewItemSorter = null;
-                    s.Sorting = SortOrder.Ascending;
-                }
-
-                s.EndUpdate();
-                s.Refresh();
-            });
+            CounterListManager.Configure();
 
             incomingMob.SafeAction(s => { s.Checked = Config.GetBool("ShowMobNames"); });
 
@@ -652,8 +635,6 @@ namespace Assistant
             }
             else if (tabs.SelectedTab == displayTab)
             {
-                Counter.Redraw(counters);
-
                 titleBarParams.SelectedIndex = 0;
             }
             else if (tabs.SelectedTab == dressTab)
@@ -1162,38 +1143,12 @@ namespace Assistant
 
         private void delCounter_Click(object sender, System.EventArgs e)
         {
-            if (counters.SelectedItems.Count <= 0)
-                return;
-
-            Counter c = counters.SelectedItems[0].Tag as Counter;
-
-            if (c != null)
-            {
-                AddCounter ac = new AddCounter(c);
-                switch (ac.ShowDialog(this))
-                {
-                    case DialogResult.Abort:
-                        counters.Items.Remove(c.ViewItem);
-                        Counter.List.Remove(c);
-                        break;
-
-                    case DialogResult.OK:
-                        c.Set((ushort) ac.ItemID, ac.Hue, ac.NameStr, ac.FmtStr, ac.DisplayImage);
-                        break;
-                }
-            }
+            CounterListManager.RemoveCounter();
         }
 
         private void addCounter_Click(object sender, System.EventArgs e)
         {
-            AddCounter dlg = new AddCounter();
-
-            if (dlg.ShowDialog(this) == DialogResult.OK)
-            {
-                Counter.Register(new Counter(dlg.NameStr, dlg.FmtStr, (ushort) dlg.ItemID, (int) dlg.Hue,
-                    dlg.DisplayImage));
-                Counter.Redraw(counters);
-            }
+            CounterListManager.AddCounter();
         }
 
         private void showInBar_CheckedChanged(object sender, System.EventArgs e)
@@ -1212,18 +1167,7 @@ namespace Assistant
 
         private void counters_ItemCheck(object sender, System.Windows.Forms.ItemCheckEventArgs e)
         {
-            if (e.Index >= 0 && e.Index < Counter.List.Count && !Counter.SupressChecks)
-            {
-                ((Counter) (counters.Items[e.Index].Tag)).SetEnabled(e.NewValue == CheckState.Checked);
-                Client.Instance.RequestTitlebarUpdate();
-                counters.Sort();
-                //counters.Refresh();
-            }
-        }
-
-        public void RedrawCounters()
-        {
-            Counter.Redraw(counters);
+            CounterListManager.ToggleCounter(e.Index, e.NewValue);
         }
 
         private void checkNewConts_CheckedChanged(object sender, System.EventArgs e)
@@ -2180,27 +2124,6 @@ namespace Assistant
              Config.Save();
              MacroManager.Save();
              MessageBox.Show( this, Language.GetString( LocString.SaveOK ), "Save OK", MessageBoxButtons.OK, MessageBoxIcon.Information );
-        }
-
-        private void edit_Click(object sender, System.EventArgs e)
-        {
-             if ( counters.SelectedItems.Count <= 0 )
-                  return;
-
-             Counter c = counters.SelectedItems[0].Tag as Counter;
-             if ( c == null )
-                  return;
-
-             AddCounter dlg = new AddCounter( c.Name, c.Format, c.ItemID, c.Hue );
-
-             if ( dlg.ShowDialog( this ) == DialogResult.OK )
-             {
-                  c.Name = dlg.NameStr;
-                  c.Format = dlg.FmtStr;
-                  c.ItemID = (ushort)dlg.ItemID;
-                  c.Hue = (int)dlg.Hue;
-                  Counter.Redraw( counters );
-             }
         }*/
 
         private void logPackets_CheckedChanged(object sender, System.EventArgs e)

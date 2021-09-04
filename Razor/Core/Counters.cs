@@ -21,36 +21,18 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Collections;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Xml;
-using Assistant.UI;
+using Assistant.Core;
 
 namespace Assistant
 {
-    public class CounterLVIComparer : IComparer
+    public interface ICounterEventSink
     {
-        private static CounterLVIComparer m_Instance;
-
-        public static CounterLVIComparer Instance
-        {
-            get
-            {
-                if (m_Instance == null)
-                    m_Instance = new CounterLVIComparer();
-                return m_Instance;
-            }
-        }
-
-        public CounterLVIComparer()
-        {
-        }
-
-        public int Compare(object a, object b)
-        {
-            return ((IComparable) (((ListViewItem) a).Tag)).CompareTo(((ListViewItem) b).Tag);
-        }
+        void OnCounterUpdated();
+        void OnCounterChanged();
+        void OnCounterToggled(bool enabled);
     }
 
     public class Counter : IComparable
@@ -64,7 +46,7 @@ namespace Assistant
         private DateTime m_LastWarning;
         private bool m_Flag;
         private bool m_DispImg;
-        private ListViewItem m_LVI;
+        private ICounterEventSink m_EventSink;
 
         public Counter(string name, string fmt, ushort iid, int hue, bool dispImg)
         {
@@ -72,10 +54,6 @@ namespace Assistant
             m_Fmt = fmt;
             m_ItemID = iid;
             m_Hue = hue;
-            m_LVI = new ListViewItem(new string[2]);
-            m_LVI.SubItems[0].Text = ToString();
-            m_LVI.Tag = this;
-            m_LVI.Checked = m_Enabled = false;
             m_Count = 0;
             m_DispImg = dispImg;
 
@@ -88,11 +66,6 @@ namespace Assistant
             m_Fmt = GetText(node["format"], "");
             m_ItemID = (ushort) GetInt(GetText(node["itemid"], "0"), 0);
             m_Hue = GetInt(GetText(node["hue"], "-1"), -1);
-
-            m_LVI = new ListViewItem(new string[2] {this.ToString(), ""});
-            m_LVI.Tag = this;
-            m_LVI.Checked = m_Enabled = false;
-
             m_DispImg = true;
         }
 
@@ -145,9 +118,9 @@ namespace Assistant
             set { m_Flag = value; }
         }
 
-        public ListViewItem ViewItem
+        public void SetEventSink(ICounterEventSink sink)
         {
-            get { return m_LVI; }
+            m_EventSink = sink;
         }
 
         public void Set(ushort iid, int hue, string name, string fmt, bool dispImg)
@@ -157,9 +130,9 @@ namespace Assistant
             m_Name = name;
             m_Fmt = fmt;
             m_DispImg = dispImg;
-
-            m_LVI.SubItems[0].Text = ToString();
             m_NeedXMLSave = true;
+            Update();
+            m_EventSink?.OnCounterChanged();
         }
 
         public string GetTitlebarString(bool dispImg, bool dispColor)
@@ -242,27 +215,19 @@ namespace Assistant
                         if (m_Count < 0)
                             m_Count = 0;
 
-                        //Engine.MainWindow.RefreshCounters();
                         Client.Instance.RequestTitlebarUpdate();
                     }
 
-                    m_LVI.SubItems[1].Text = m_Count.ToString();
+                    m_EventSink?.OnCounterUpdated();
                 }
             }
         }
 
-        public void SetEnabled(bool value)
+        private void Update()
         {
-            m_Enabled = value;
-            if (m_Enabled)
+            if (m_Enabled && !SupressChecks)
             {
-                if (!SupressChecks)
-                    QuickRecount();
-                m_LVI.SubItems[1].Text = m_Count.ToString();
-            }
-            else
-            {
-                m_LVI.SubItems[1].Text = "";
+                QuickRecount();
             }
         }
 
@@ -273,8 +238,9 @@ namespace Assistant
             {
                 if (m_Enabled != value)
                 {
-                    m_LVI.Checked = value;
-                    SetEnabled(value);
+                    m_Enabled = value;
+                    Update();
+                    m_EventSink?.OnCounterToggled(m_Enabled);
                 }
             }
         }
@@ -308,7 +274,6 @@ namespace Assistant
 
         private static bool m_NeedXMLSave = false;
         private static List<Counter> m_List = new List<Counter>();
-        private static bool m_SupressWarn, m_SupressChecks;
         private static Dictionary<Item, ushort> m_Cache = new Dictionary<Item, ushort>();
 
         public static List<Counter> List
@@ -323,16 +288,8 @@ namespace Assistant
             Load();
         }
 
-        public static bool SupressWarnings
-        {
-            get { return m_SupressWarn; }
-            set { m_SupressWarn = value; }
-        }
-
-        public static bool SupressChecks
-        {
-            get { return m_SupressChecks; }
-        }
+        public static bool SupressWarnings { get; set; }
+        public static bool SupressChecks { get; set; }
 
         private static void Load()
         {
@@ -505,7 +462,6 @@ namespace Assistant
         {
             m_List.Add(c);
             m_NeedXMLSave = true;
-            Engine.MainWindow.SafeAction(s => s.RedrawCounters());
         }
 
         public static void Uncount(Item item)
@@ -616,17 +572,6 @@ namespace Assistant
             for (int i = 0; i < m_List.Count; i++)
                 m_List[i].Amount = 0;
             SupressWarnings = false;
-        }
-
-        public static void Redraw(ListView list)
-        {
-            m_SupressChecks = true;
-            list.BeginUpdate();
-            list.Items.Clear();
-            for (int i = 0; i < m_List.Count; i++)
-                list.Items.Add(m_List[i].ViewItem);
-            list.EndUpdate();
-            m_SupressChecks = false;
         }
     }
 }
