@@ -285,16 +285,6 @@ namespace Assistant.Core
             return false;
         }
 
-        public static bool IsFriendsGroupEnabled(FriendGroup group)
-        {
-            if (FriendGroups.Contains(group))
-            {
-                return group.Enabled;
-            }
-
-            return false;
-        }
-
         public static bool RemoveFriend(FriendGroup group, int index)
         {
             if (FriendGroups.Contains(group))
