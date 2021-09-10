@@ -154,6 +154,7 @@ namespace Assistant.UI
 
                         case DialogResult.OK:
                             counter.Set((ushort)ac.ItemID, ac.Hue, ac.NameStr, ac.FmtStr, ac.DisplayImage);
+                            listView.Sort();
                             break;
                     }
                 }
