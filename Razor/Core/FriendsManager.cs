@@ -32,6 +32,7 @@ namespace Assistant.Core
     {
         private static ComboBox _friendGroups;
         private static ListBox _friendList;
+        private static GroupHotKeyManager _hotkeyManager = new GroupHotKeyManager();
 
         private static List<FriendGroup> FriendGroups = new List<FriendGroup>();
 
@@ -58,6 +59,47 @@ namespace Assistant.Core
             }
         }
 
+        private class GroupHotKeyManager
+        {
+            private void SafeAction(Action action)
+            {
+                if (Engine.MainWindow == null)
+                {
+                    action?.Invoke();
+                }
+                else
+                {
+                    Engine.MainWindow.SafeAction(s => action?.Invoke());
+                }
+            }
+
+            public void Add(FriendGroup group)
+            {
+                var groupName = group.GroupName;
+
+                SafeAction(() =>
+                {
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {group.GroupName}", group.AddFriendToGroup);
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {group.GroupName}", group.ToggleFriendGroup);
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {group.GroupName}",
+                        group.AddAllMobileAsFriends);
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Humanoids: {group.GroupName}",
+                        group.AddAllHumanoidsAsFriends);
+                });
+            }
+
+            public void Remove(FriendGroup group)
+            {
+                SafeAction(() =>
+                {
+                    HotKey.Remove($"Add Target To: {group.GroupName}");
+                    HotKey.Remove($"Toggle Group: {group.GroupName}");
+                    HotKey.Remove($"Add All Mobiles: {group.GroupName}");
+                    HotKey.Remove($"Add All Humanoids: {group.GroupName}");
+                });
+            }
+        }
+
         public class FriendGroup
         {
             public string GroupName { get; set; }
@@ -73,59 +115,13 @@ namespace Assistant.Core
                 Friends = new List<Friend>();
             }
 
-            public void AddHotKeys()
-            {
-                if (Engine.MainWindow == null)
-                {
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {GroupName}", AddFriendToGroup);
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {GroupName}", ToggleFriendGroup);
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {GroupName}",
-                        AddAllMobileAsFriends);
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Humanoids: {GroupName}",
-                        AddAllHumanoidsAsFriends);
-                }
-                else
-                {
-                    Engine.MainWindow.SafeAction(s =>
-                    {
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {GroupName}", AddFriendToGroup);
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {GroupName}", ToggleFriendGroup);
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {GroupName}",
-                            AddAllMobileAsFriends);
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Humanoids: {GroupName}",
-                            AddAllHumanoidsAsFriends);
-                    });
-                }
-            }
-
-            public void RemoveHotKeys()
-            {
-                if (Engine.MainWindow == null)
-                {
-                    HotKey.Remove($"Add Target To: {GroupName}");
-                    HotKey.Remove($"Toggle Group: {GroupName}");
-                    HotKey.Remove($"Add All Mobiles: {GroupName}");
-                    HotKey.Remove($"Add All Humanoids: {GroupName}");
-                }
-                else
-                {
-                    Engine.MainWindow.SafeAction(s =>
-                    {
-                        HotKey.Remove($"Add Target To: {GroupName}");
-                        HotKey.Remove($"Toggle Group: {GroupName}");
-                        HotKey.Remove($"Add All Mobiles: {GroupName}");
-                        HotKey.Remove($"Add All Humanoids: {GroupName}");
-                    });
-                }
-            }
-
             public void AddFriendToGroup()
             {
                 World.Player.SendMessage(MsgLevel.Friend, $"Target friend to add to group '{GroupName}'");
                 Targeting.OneTimeTarget(OnAddFriendTarget);
             }
 
-            private void ToggleFriendGroup()
+            public void ToggleFriendGroup()
             {
                 if (Enabled)
                 {
@@ -317,7 +313,7 @@ namespace Assistant.Core
             {
                 if (friendGroup == group)
                 {
-                    friendGroup.RemoveHotKeys();
+                    _hotkeyManager.Remove(friendGroup);
                 }
             }
 
@@ -336,7 +332,7 @@ namespace Assistant.Core
                 OverheadFormatEnabled = true
             };
 
-            friendGroup.AddHotKeys();
+            _hotkeyManager.Add(friendGroup);
 
             FriendGroups.Add(friendGroup);
 
@@ -436,7 +432,7 @@ namespace Assistant.Core
                         friendGroup.OverheadFormatEnabled = true;
                     }
 
-                    friendGroup.AddHotKeys();
+                    _hotkeyManager.Add(friendGroup);
 
                     foreach (XmlElement friendEl in el.GetElementsByTagName("friend"))
                     {
@@ -471,7 +467,7 @@ namespace Assistant.Core
         {
             foreach (FriendGroup friendGroup in FriendGroups)
             {
-                friendGroup.RemoveHotKeys();
+                _hotkeyManager.Remove(friendGroup);
             }
 
             FriendGroups.Clear();
