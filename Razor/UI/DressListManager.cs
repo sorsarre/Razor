@@ -1,27 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace Assistant.UI
 {
     class DressListManager
     {
-        private static Form m_dialogOwner;
-        private static ListBox m_dressList;
-        private static ListBox m_dressItems;
-        private static DressList m_undressBagList = null;
+        private static Form _dialogOwner;
+        private static ListBox _dressList;
+        private static ListBox _dressItems;
+        private static DressList _undressBagList = null;
 
         public static void SetControls(Form dialogOwner, ListBox dressList, ListBox dressItems)
         {
-            m_dialogOwner = dialogOwner;
-            m_dressList = dressList;
-            m_dressItems = dressItems;
+            _dialogOwner = dialogOwner;
+            _dressList = dressList;
+            _dressItems = dressItems;
             DressList.OnItemsReset += OnItemsReset;
         }
 
         public static void Display()
         {
-            m_dressList?.SafeAction(s =>
+            _dressList?.SafeAction(s =>
             {
                 int selected = s.SelectedIndex;
                 Refresh();
@@ -34,10 +32,10 @@ namespace Assistant.UI
 
         public static void Refresh()
         {
-            m_dressList?.SafeAction(s => s.Items.Clear());
-            m_dressItems?.SafeAction(s => s.Items.Clear());
+            _dressList?.SafeAction(s => s.Items.Clear());
+            _dressItems?.SafeAction(s => s.Items.Clear());
 
-            m_dressList?.SafeAction(s =>
+            _dressList?.SafeAction(s =>
             {
                 foreach (var list in DressList.DressLists)
                 {
@@ -48,7 +46,7 @@ namespace Assistant.UI
 
         public static void AddDress()
         {
-            if (InputBox.Show(m_dialogOwner, Language.GetString(LocString.DressName), Language.GetString(LocString.EnterAName)))
+            if (InputBox.Show(_dialogOwner, Language.GetString(LocString.DressName), Language.GetString(LocString.EnterAName)))
             {
                 string str = InputBox.GetString();
                 if (str == null || str == "")
@@ -56,7 +54,7 @@ namespace Assistant.UI
                 DressList list = new DressList(str);
                 DressList.Add(list);
 
-                m_dressList.SafeAction(s =>
+                _dressList.SafeAction(s =>
                 {
                     s.Items.Add(list);
                     s.SelectedItem = list;
@@ -66,20 +64,20 @@ namespace Assistant.UI
 
         public static void RemoveDress()
         {
-            var dress = m_dressList.SelectedItem as DressList;
+            var dress = _dressList.SelectedItem as DressList;
 
-            if (dress != null && MessageBox.Show(m_dialogOwner, Language.GetString(LocString.DelDressQ), "Confirm",
+            if (dress != null && MessageBox.Show(_dialogOwner, Language.GetString(LocString.DelDressQ), "Confirm",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 dress.Items.Clear();
 
-                m_dressList.SafeAction(s =>
+                _dressList.SafeAction(s =>
                 {
                     s.Items.Remove(dress);
                     s.SelectedIndex = -1;
                 });
 
-                m_dressItems.SafeAction(s => s.Items.Clear());
+                _dressItems.SafeAction(s => s.Items.Clear());
 
                 DressList.Remove(dress);
             }
@@ -87,14 +85,14 @@ namespace Assistant.UI
 
         public static void DressNow()
         {
-            var dress = m_dressList.SelectedItem as DressList;
+            var dress = _dressList.SelectedItem as DressList;
             if (dress != null && World.Player != null)
                 dress.Dress();
         }
 
         public static void UndressNow()
         {
-            var dress = m_dressList.SelectedItem as DressList;
+            var dress = _dressList.SelectedItem as DressList;
             if (dress != null && World.Player != null && World.Player.Backpack != null)
                 dress.Undress();
         }
@@ -106,21 +104,21 @@ namespace Assistant.UI
 
         public static void RemoveItem()
         {
-            var list = m_dressList.SelectedItem as DressList;
+            var list = _dressList.SelectedItem as DressList;
             if (list == null)
                 return;
 
-            int sel = m_dressItems.SelectedIndex;
+            int sel = _dressItems.SelectedIndex;
             if (sel < 0 || sel >= list.Items.Count)
                 return;
 
-            if (MessageBox.Show(m_dialogOwner, Language.GetString(LocString.DelDressItemQ), "Confirm", MessageBoxButtons.YesNo,
+            if (MessageBox.Show(_dialogOwner, Language.GetString(LocString.DelDressItemQ), "Confirm", MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 try
                 {
                     list.Items.RemoveAt(sel);
-                    m_dressItems.SafeAction(s => s.Items.RemoveAt(sel));
+                    _dressItems.SafeAction(s => s.Items.RemoveAt(sel));
                 }
                 catch
                 {
@@ -130,24 +128,24 @@ namespace Assistant.UI
 
         public static void ClearDress()
         {
-            var list = m_dressList.SelectedItem as DressList;
+            var list = _dressList.SelectedItem as DressList;
             if (list == null)
                 return;
 
-            if (MessageBox.Show(m_dialogOwner, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
+            if (MessageBox.Show(_dialogOwner, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 list.Items.Clear();
-                m_dressItems.SafeAction(s => s.Items.Clear());
+                _dressItems.SafeAction(s => s.Items.Clear());
             }
         }
 
         public static void ConvertItemToType()
         {
-            var list = m_dressList.SelectedItem as DressList;
+            var list = _dressList.SelectedItem as DressList;
             if (list == null)
                 return;
-            int sel = m_dressItems.SelectedIndex;
+            int sel = _dressItems.SelectedIndex;
             if (sel < 0 || sel >= list.Items.Count)
                 return;
 
@@ -158,7 +156,7 @@ namespace Assistant.UI
                 if (item != null)
                 {
                     list.Items[sel] = item.ItemID;
-                    m_dressItems.SafeAction(di =>
+                    _dressItems.SafeAction(di =>
                     {
                         di.BeginUpdate();
                         di.Items[sel] = item.ItemID.ToString();
@@ -173,11 +171,11 @@ namespace Assistant.UI
             if (World.Player == null)
                 return;
 
-            var list = m_dressList.SelectedItem as DressList;
+            var list = _dressList.SelectedItem as DressList;
             if (list == null)
                 return;
 
-            m_undressBagList = list;
+            _undressBagList = list;
             Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnDressBagTarget));
             World.Player.SendMessage(MsgLevel.Force, LocString.TargUndressBag, list.Name);
         }
@@ -212,13 +210,13 @@ namespace Assistant.UI
 
         public static void OnListSelected()
         {
-            var list = m_dressList.SelectedItem as DressList;
-            m_dressItems.SafeAction(s => FillDressItemsUnsafe(s, list));
+            var list = _dressList.SelectedItem as DressList;
+            _dressItems.SafeAction(s => FillDressItemsUnsafe(s, list));
         }
 
         public static void UseCurrent()
         {
-            var list = m_dressList.SelectedItem as DressList;
+            var list = _dressList.SelectedItem as DressList;
             if (World.Player == null)
                 return;
             if (list == null)
@@ -232,7 +230,7 @@ namespace Assistant.UI
                     list.Items.Add(item.Serial);
             }
 
-            m_dressList.SafeAction(s =>
+            _dressList.SafeAction(s =>
             {
                 s.SelectedItem = null;
                 s.SelectedItem = list;
@@ -241,7 +239,7 @@ namespace Assistant.UI
 
         private static void OnDressBagTarget(bool location, Serial serial, Point3D p, ushort gfxid)
         {
-            if (m_undressBagList == null)
+            if (_undressBagList == null)
                 return;
 
             Engine.MainWindow.ShowMe();
@@ -250,12 +248,12 @@ namespace Assistant.UI
                 Item item = World.FindItem(serial);
                 if (item != null)
                 {
-                    m_undressBagList.SetUndressBag(item.Serial);
+                    _undressBagList.SetUndressBag(item.Serial);
                     World.Player.SendMessage(MsgLevel.Force, LocString.UB_Set);
                 }
                 else
                 {
-                    m_undressBagList.SetUndressBag(Serial.Zero);
+                    _undressBagList.SetUndressBag(Serial.Zero);
                     World.Player.SendMessage(MsgLevel.Force, LocString.ItemNotFound);
                 }
             }
@@ -264,7 +262,7 @@ namespace Assistant.UI
                 World.Player.SendMessage(MsgLevel.Force, LocString.ItemNotFound);
             }
 
-            m_undressBagList = null;
+            _undressBagList = null;
         }
 
         private static void OnDressItemTarget(bool loc, Serial serial, Point3D pt, ushort itemid)
@@ -276,7 +274,7 @@ namespace Assistant.UI
             Engine.MainWindow.ShowMe();
             if (serial.IsItem)
             {
-                var list = m_dressList.SelectedItem as DressList;
+                var list = _dressList.SelectedItem as DressList;
 
                 if (list == null)
                     return;
@@ -284,7 +282,7 @@ namespace Assistant.UI
                 list.Items.Add(serial);
                 Item item = World.FindItem(serial);
 
-                m_dressItems.SafeAction(s =>
+                _dressItems.SafeAction(s =>
                 {
                     if (item == null)
                         s.Items.Add(Language.Format(LocString.OutOfRangeA1, serial));
@@ -296,8 +294,8 @@ namespace Assistant.UI
 
         private static void OnItemsReset()
         {
-            m_dressList?.SafeAction(s => s.Items.Clear());
-            m_dressItems?.SafeAction(s => s.Items.Clear());
+            _dressList?.SafeAction(s => s.Items.Clear());
+            _dressItems?.SafeAction(s => s.Items.Clear());
         }
     }
 }
