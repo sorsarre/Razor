@@ -270,13 +270,9 @@ namespace Assistant.Core
 
         public static void EnableFriendsGroup(FriendGroup group, bool enabled)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (FriendGroups.Contains(group))
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.Enabled = enabled;
-                    return;
-                }
+                group.Enabled = enabled;
             }
         }
 
@@ -295,12 +291,9 @@ namespace Assistant.Core
 
         public static bool IsFriendsGroupEnabled(FriendGroup group)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (FriendGroups.Contains(group))
             {
-                if (friendGroup == group)
-                {
-                    return friendGroup.Enabled;
-                }
+                return group.Enabled;
             }
 
             return false;
@@ -308,31 +301,14 @@ namespace Assistant.Core
 
         public static bool RemoveFriend(FriendGroup group, int index)
         {
-            foreach (var friendGroup in FriendGroups)
+            if (FriendGroups.Contains(group))
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.Friends.RemoveAt(index);
-
-                    RedrawList(group);
-
-                    return true;
-                }
+                group.Friends.RemoveAt(index);
+                RedrawList(group);
+                return true;
             }
 
             return false;
-        }
-
-        public static void ClearFriendGroup(string group)
-        {
-            foreach (var friendGroup in FriendGroups)
-            {
-                if (friendGroup.GroupName.Equals(group))
-                {
-                    friendGroup.Friends.Clear();
-                    return;
-                }
-            }
         }
 
         public static bool DeleteFriendGroup(FriendGroup group)
@@ -369,37 +345,25 @@ namespace Assistant.Core
 
         public static void SetOverheadFormat(FriendGroup group, string format)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (FriendGroups.Contains(group))
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.OverheadFormat = format;
-                    return;
-                }
+                group.OverheadFormat = format;
             }
         }
 
         public static void SetOverheadHue(FriendGroup group, int hue)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (FriendGroups.Contains(group))
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.OverheadFormatHue = hue;
-                    return;
-                }
+                group.OverheadFormatHue = hue;
             }
         }
 
         public static void SetOverheadFormatEnabled(FriendGroup group, bool enabled)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (FriendGroups.Contains(group))
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.OverheadFormatEnabled = enabled;
-                    return;
-                }
+                group.OverheadFormatEnabled = enabled;
             }
         }
 
