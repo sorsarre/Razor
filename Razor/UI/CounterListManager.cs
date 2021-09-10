@@ -66,11 +66,24 @@ namespace Assistant.UI
         private static ListView m_ListView;
         private static IWin32Window m_DialogOwner;
 
-        public static void SetControls(IWin32Window dialogOwner, ListView listView)
+        public static void SetControls(IWin32Window dialogOwner, ListView counterListView)
         {
             m_DialogOwner = dialogOwner;
-            m_ListView = listView;
-            Redraw();
+            m_ListView = counterListView;
+
+            // Fill counters list
+            Counter.SupressChecks = true;
+            m_ListView.SafeAction(listView =>
+            {
+                listView.BeginUpdate();
+                listView.Items.Clear();
+                foreach (var counter in Counter.List)
+                {
+                    listView.Items.Add(new CounterListItem(counter));
+                }
+                listView.EndUpdate();
+            });
+            Counter.SupressChecks = false;
         }
 
         public static void Configure()
@@ -162,22 +175,6 @@ namespace Assistant.UI
                 Client.Instance.RequestTitlebarUpdate();
                 m_ListView.Sort();
             });
-        }
-
-        private static void Redraw()
-        {
-            Counter.SupressChecks = true;
-            m_ListView.SafeAction(listView =>
-            {
-                listView.BeginUpdate();
-                listView.Items.Clear();
-                foreach (var counter in Counter.List)
-                {
-                    listView.Items.Add(new CounterListItem(counter));
-                }
-                listView.EndUpdate();
-            });
-            Counter.SupressChecks = false;
         }
     }
 }
