@@ -21,7 +21,6 @@
 using System;
 using System.Collections.Generic;
 using System.Xml;
-using System.Windows.Forms;
 using Assistant.Scripts;
 using Assistant.UI;
 
@@ -30,27 +29,19 @@ namespace Assistant
     public class DressList
     {
         private static readonly List<DressList> m_List = new List<DressList>();
-        private static ListBox _dressList;
-        private static ListBox _dressItems;
 
-        public static void SetControls(ListBox dressList, ListBox dressItems)
+        public static IReadOnlyList<DressList> DressLists
         {
-            _dressList = dressList;
-            _dressItems = dressItems;
+            get { return m_List; }
         }
 
-        public static void Redraw()
-        {
-            _dressList.SafeAction(s => s.Items.Clear());
-            _dressItems.SafeAction(s => s.Items.Clear());
+        public delegate void OnItemsResetCallback();
 
-            _dressList.SafeAction(s => s.Items.AddRange(m_List.ToArray()));
-        }
+        public static OnItemsResetCallback OnItemsReset { get; set; }
 
         public static void ClearAll()
         {
-            _dressList?.SafeAction(s => s.Items.Clear());
-            _dressItems?.SafeAction(s => s.Items.Clear());
+            OnItemsReset?.Invoke();
 
             while (m_List.Count > 0)
                 Remove(m_List[0]);

@@ -73,7 +73,7 @@ namespace Assistant
             Language.LoadControlNames(this);
 
             FriendsManager.SetControls(friendsGroup, friendsList);
-            DressList.SetControls(dressList, dressItems);
+            DressListManager.SetControls(this, dressList, dressItems);
             TargetFilterManager.OnItemsChanged += this.RefreshTargetFilters;
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
             SoundMusicManager.OnPlayableMusicChanged += this.RefreshMusicList;
@@ -658,11 +658,7 @@ namespace Assistant
             }
             else if (tabs.SelectedTab == dressTab)
             {
-                int sel = dressList.SelectedIndex;
-                dressItems.Items.Clear();
-                DressList.Redraw();
-                if (sel >= 0 && sel < dressList.Items.Count)
-                    dressList.SelectedIndex = sel;
+                DressListManager.Display();
             }
             else if (tabs.SelectedTab == hotkeysTab)
             {
@@ -1468,221 +1464,52 @@ namespace Assistant
 
         private void addDress_Click(object sender, System.EventArgs e)
         {
-            if (InputBox.Show(this, Language.GetString(LocString.DressName), Language.GetString(LocString.EnterAName)))
-            {
-                string str = InputBox.GetString();
-                if (str == null || str == "")
-                    return;
-                DressList list = new DressList(str);
-                DressList.Add(list);
-
-                dressList.SafeAction(s =>
-                {
-                    s.Items.Add(list);
-                    s.SelectedItem = list;
-                });
-            }
+            DressListManager.AddDress();
         }
 
         private void removeDress_Click(object sender, System.EventArgs e)
         {
-            DressList dress = (DressList) dressList.SelectedItem;
-
-            if (dress != null && MessageBox.Show(this, Language.GetString(LocString.DelDressQ), "Confirm",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                dress.Items.Clear();
-
-                dressList.SafeAction(s =>
-                {
-                    s.Items.Remove(dress);
-                    s.SelectedIndex = -1;
-                });
-
-                dressItems.SafeAction(s => s.Items.Clear());
-
-                DressList.Remove(dress);
-            }
+            DressListManager.RemoveDress();
         }
 
         private void dressNow_Click(object sender, System.EventArgs e)
         {
-            DressList dress = (DressList) dressList.SelectedItem;
-            if (dress != null && World.Player != null)
-                dress.Dress();
+            DressListManager.DressNow();
         }
 
         private void undressList_Click(object sender, System.EventArgs e)
         {
-            DressList dress = (DressList) dressList.SelectedItem;
-            if (dress != null && World.Player != null && World.Player.Backpack != null)
-                dress.Undress();
+            DressListManager.UndressNow();
         }
 
         private void targItem_Click(object sender, System.EventArgs e)
         {
-            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnDressItemTarget));
-        }
-
-        private void OnDressItemTarget(bool loc, Serial serial, Point3D pt, ushort itemid)
-        {
-            if (loc)
-                return;
-
-            ShowMe();
-            if (serial.IsItem)
-            {
-                DressList list = (DressList) dressList.SelectedItem;
-
-                if (list == null)
-                    return;
-
-                list.Items.Add(serial);
-                Item item = World.FindItem(serial);
-
-                dressItems.SafeAction(s =>
-                {
-                    if (item == null)
-                        s.Items.Add(Language.Format(LocString.OutOfRangeA1, serial));
-                    else
-                        s.Items.Add(item.ToString());
-                });
-            }
+            DressListManager.AddItem();
         }
 
         private void dressDelSel_Click(object sender, System.EventArgs e)
         {
-            DressList list = (DressList) dressList.SelectedItem;
-            if (list == null)
-                return;
-
-            int sel = dressItems.SelectedIndex;
-            if (sel < 0 || sel >= list.Items.Count)
-                return;
-
-            if (MessageBox.Show(this, Language.GetString(LocString.DelDressItemQ), "Confirm", MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                try
-                {
-                    list.Items.RemoveAt(sel);
-                    dressItems.SafeAction(s => s.Items.RemoveAt(sel));
-                }
-                catch
-                {
-                }
-            }
+            DressListManager.RemoveItem();
         }
 
         private void clearDress_Click(object sender, System.EventArgs e)
         {
-            DressList list = (DressList) dressList.SelectedItem;
-            if (list == null)
-                return;
-
-            if (MessageBox.Show(this, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                list.Items.Clear();
-                dressItems.SafeAction(s => s.Items.Clear());
-            }
+            DressListManager.ClearDress();
         }
-
-        private DressList undressBagList = null;
 
         private void undressBag_Click(object sender, System.EventArgs e)
         {
-            if (World.Player == null)
-                return;
-
-            DressList list = (DressList) dressList.SelectedItem;
-            if (list == null)
-                return;
-
-            undressBagList = list;
-            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(onDressBagTarget));
-            World.Player.SendMessage(MsgLevel.Force, LocString.TargUndressBag, list.Name);
-        }
-
-        void onDressBagTarget(bool location, Serial serial, Point3D p, ushort gfxid)
-        {
-            if (undressBagList == null)
-                return;
-
-            ShowMe();
-            if (serial.IsItem)
-            {
-                Item item = World.FindItem(serial);
-                if (item != null)
-                {
-                    undressBagList.SetUndressBag(item.Serial);
-                    World.Player.SendMessage(MsgLevel.Force, LocString.UB_Set);
-                }
-                else
-                {
-                    undressBagList.SetUndressBag(Serial.Zero);
-                    World.Player.SendMessage(MsgLevel.Force, LocString.ItemNotFound);
-                }
-            }
-            else
-            {
-                World.Player.SendMessage(MsgLevel.Force, LocString.ItemNotFound);
-            }
-
-            undressBagList = null;
+            DressListManager.SetUndressBag();
         }
 
         private void dressList_SelectedIndexChanged(object sender, System.EventArgs e)
         {
-            DressList list = (DressList) dressList.SelectedItem;
-
-            dressItems.BeginUpdate();
-            dressItems.Items.Clear();
-            if (list != null)
-            {
-                for (int i = 0; i < list.Items.Count; i++)
-                {
-                    if (list.Items[i] is Serial)
-                    {
-                        Serial serial = (Serial) list.Items[i];
-                        Item item = World.FindItem(serial);
-
-                        if (item != null)
-                            dressItems.Items.Add(item.ToString());
-                        else
-                            dressItems.Items.Add(Language.Format(LocString.OutOfRangeA1, serial));
-                    }
-                    else if (list.Items[i] is ItemID)
-                    {
-                        dressItems.Items.Add(list.Items[i].ToString());
-                    }
-                }
-            }
-
-            dressItems.EndUpdate();
+            DressListManager.OnListSelected();
         }
 
         private void dressUseCur_Click(object sender, System.EventArgs e)
         {
-            DressList list = (DressList) dressList.SelectedItem;
-            if (World.Player == null)
-                return;
-            if (list == null)
-                return;
-
-            for (int i = 0; i < World.Player.Contains.Count; i++)
-            {
-                Item item = (Item) World.Player.Contains[i];
-                if (item.Layer <= Layer.LastUserValid && item.Layer != Layer.Backpack && item.Layer != Layer.Hair &&
-                    item.Layer != Layer.FacialHair)
-                    list.Items.Add(item.Serial);
-            }
-
-            dressList.SafeAction(s =>
-            {
-                s.SelectedItem = null;
-                s.SelectedItem = list;
-            });
+            DressListManager.UseCurrent();
         }
 
         private void hotkeyTree_AfterSelect(object sender, System.Windows.Forms.TreeViewEventArgs e)
@@ -2261,25 +2088,7 @@ namespace Assistant
 
         private void OnMakeType(object sender, System.EventArgs e)
         {
-            DressList list = (DressList) dressList.SelectedItem;
-            if (list == null)
-                return;
-            int sel = dressItems.SelectedIndex;
-            if (sel < 0 || sel >= list.Items.Count)
-                return;
-
-            if (list.Items[sel] is Serial)
-            {
-                Serial s = (Serial) list.Items[sel];
-                Item item = World.FindItem(s);
-                if (item != null)
-                {
-                    list.Items[sel] = item.ItemID;
-                    dressItems.BeginUpdate();
-                    dressItems.Items[sel] = item.ItemID.ToString();
-                    dressItems.EndUpdate();
-                }
-            }
+            DressListManager.ConvertItemToType();
         }
 
         private static char[] m_InvalidNameChars = new char[] {'/', '\\', ';', '?', ':', '*'};
@@ -4020,26 +3829,7 @@ namespace Assistant
         {
             if (e.KeyCode == Keys.Delete)
             {
-                DressList list = (DressList) dressList.SelectedItem;
-                if (list == null)
-                    return;
-
-                int sel = dressItems.SelectedIndex;
-                if (sel < 0 || sel >= list.Items.Count)
-                    return;
-
-                if (MessageBox.Show(this, Language.GetString(LocString.DelDressItemQ), "Confirm",
-                        MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                {
-                    try
-                    {
-                        list.Items.RemoveAt(sel);
-                        dressItems.Items.RemoveAt(sel);
-                    }
-                    catch
-                    {
-                    }
-                }
+                DressListManager.RemoveItem();
             }
         }
 
