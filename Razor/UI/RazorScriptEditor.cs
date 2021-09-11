@@ -45,7 +45,7 @@ namespace Assistant.UI
 
         private void InitScriptEditorPopout()
         {
-            ScriptManager.SetEditor(scriptEditor, true);
+            ScriptTabManager.EditorManager.SetEditor(scriptEditor, true);
 
             scriptDocMap.Target = scriptEditor;
 
@@ -53,7 +53,7 @@ namespace Assistant.UI
             {
                 scriptEditor.SafeAction(s =>
                 {
-                    ScriptManager.SetEditorText(ScriptManager.SelectedScript);
+                    ScriptTabManager.EditorManager.SetEditorText(ScriptManager.SelectedScript);
                     UpdateScriptWindowTitle();
                 });
             }

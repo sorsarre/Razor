@@ -87,7 +87,7 @@ namespace Assistant
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
             SoundMusicManager.OnPlayableMusicChanged += this.RefreshMusicList;
             SoundMusicManager.OnSoundFiltersChanged += this.RefreshSoundFilter;
-            ScriptManager.SetControls(scriptEditor, scriptTree, scriptVariables);
+            ScriptTabManager.SetControls(scriptEditor, scriptTree, scriptVariables);
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
@@ -122,7 +122,7 @@ namespace Assistant
             Show();
             BringToFront();
             tabs_IndexChanged(this, null); // load first tab
-            ScriptManager.InitScriptEditor();
+            ScriptTabManager.EditorManager.InitScriptEditor();
 
             m_ProfileConfirmLoad = false;
             Config.SetupProfilesList(profiles, Config.CurrentProfile.Name);
@@ -2585,7 +2585,7 @@ namespace Assistant
         {
             RazorScript rs = GetScriptSel();
 
-            ScriptManager.RedrawScripts();
+            ScriptTabManager.RedrawScripts();
 
             if (rs != null)
             {
@@ -2594,7 +2594,7 @@ namespace Assistant
 
             RebuildScriptCache();
 
-            ScriptManager.RedrawScriptVariables();
+            ScriptTabManager.RedrawScriptVariables();
         }
 
         public Macro LastSelectedMacro { get; set; }
@@ -5701,11 +5701,6 @@ namespace Assistant
             MacroManager.DisplayMacroVariables(macroVariables);
         }
 
-        public void SaveScriptVariables()
-        {
-            ScriptManager.RedrawScripts();
-        }
-
         private void filterDaemonGraphics_CheckedChanged(object sender, EventArgs e)
         {
             Config.SetProperty("FilterDaemonGraphics", filterDaemonGraphics.Checked);
@@ -5881,9 +5876,9 @@ namespace Assistant
                     Path = filePath
                 };
                 
-                TreeNode node = ScriptManager.GetScriptDirNode();
+                TreeNode node = ScriptTabManager.GetScriptDirNode();
 
-                ScriptManager.RedrawScripts();
+                ScriptTabManager.RedrawScripts();
 
                 TreeNode newNode = new TreeNode(script.Name)
                 {
@@ -5944,7 +5939,7 @@ namespace Assistant
                     return;
                 }
 
-                TreeNode node = ScriptManager.GetScriptDirNode();
+                TreeNode node = ScriptTabManager.GetScriptDirNode();
 
                 string path = (node == null || !(node.Tag is string))
                     ? Config.GetUserDirectory("Scripts")
@@ -6040,23 +6035,15 @@ namespace Assistant
             {
                 string name = InputBox.GetString();
 
-                foreach (ScriptVariables.ScriptVariable mV in ScriptVariables.ScriptVariableList
-                )
+                if (ScriptVariables.GetVariable(name) != null)
                 {
-                    if (mV.Name.ToLower().Equals(name.ToLower()))
-                    {
-                        MessageBox.Show(this, "Pick a unique Script Variable name and try again",
-                            "New Script Variable", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                    MessageBox.Show(this, "Pick a unique Script Variable name and try again",
+                                    "New Script Variable", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
-                ScriptVariables.ScriptVariableList.Add(
-                    new ScriptVariables.ScriptVariable(name, t));
-
-                ScriptVariables.RegisterVariable(name);
-
-                ScriptManager.RedrawScripts();
+                var variable = new ScriptVariables.ScriptVariable(name, t);
+                ScriptVariables.AddVariable(variable);
             }
 
             Engine.MainWindow.ShowMe();
@@ -6074,9 +6061,7 @@ namespace Assistant
                 Z = pt.Z
             };
 
-            ScriptVariables.ScriptVariableList[scriptVariables.SelectedIndex].TargetInfo = t;
-
-            ScriptManager.RedrawScripts();
+            ScriptVariables.SetTargetInfoAt(scriptVariables.SelectedIndex, t);
 
             Engine.MainWindow.ShowMe();
         }
@@ -6099,13 +6084,7 @@ namespace Assistant
             if (ScriptManager.Running || ScriptManager.Recording || World.Player == null)
                 return;
 
-            if (scriptVariables.SelectedIndex < 0)
-                return;
-
-            ScriptVariables.UnregisterVariable(ScriptVariables.ScriptVariableList[scriptVariables.SelectedIndex].Name);
-            ScriptVariables.ScriptVariableList.RemoveAt(scriptVariables.SelectedIndex);
-
-            ScriptManager.RedrawScripts();
+            ScriptVariables.RemoveVariableAt(scriptVariables.SelectedIndex);
         }
 
         private void autoSaveScript_CheckedChanged(object sender, EventArgs e)
@@ -6234,7 +6213,7 @@ namespace Assistant
                 s.TopMost = false;
                 s.Hide();
 
-                ScriptManager.SetEditor(scriptEditor, false);
+                ScriptTabManager.EditorManager.SetEditor(scriptEditor, false);
             });
         }
 
@@ -6929,7 +6908,7 @@ namespace Assistant
         {
             Config.SetProperty("DisableScriptTooltips", disableScriptTooltips.Checked);
 
-            ScriptManager.InitScriptEditor();
+            ScriptTabManager.EditorManager.InitScriptEditor();
         }
 
         private RazorScript _selectedScript;
@@ -6972,9 +6951,8 @@ namespace Assistant
                     }
                 }
                 
-                ScriptManager.SetEditorText(_selectedScript);
-
-                ScriptManager.ClearAllHighlightLines();
+                ScriptTabManager.EditorManager.SetEditorText(_selectedScript);
+                ScriptTabManager.EditorManager.ClearAllHighlightLines();
             });
         }
 
@@ -7179,7 +7157,7 @@ namespace Assistant
                 return;
             }
 
-            TreeNode node = ScriptManager.GetScriptDirNode();
+            TreeNode node = ScriptTabManager.GetScriptDirNode();
 
             try
             {

@@ -436,6 +436,8 @@
     <Compile Include="UI\RazorScriptEditor.Designer.cs">
       <DependentUpon>RazorScriptEditor.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\ScriptEditorManager.cs" />
+    <Compile Include="UI\ScriptTabManager.cs" />
     <Compile Include="UI\SplashScreen.cs">
       <SubType>Form</SubType>
     </Compile>
