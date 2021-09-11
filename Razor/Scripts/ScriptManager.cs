@@ -20,7 +20,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -28,7 +27,6 @@ using Assistant.Gumps.Internal;
 using Assistant.Macros;
 using Assistant.Scripts.Engine;
 using Assistant.UI;
-using FastColoredTextBoxNS;
 
 namespace Assistant.Scripts
 {

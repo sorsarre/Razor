@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FastColoredTextBoxNS;
 using Assistant.Scripts;
 using System.Drawing;
@@ -143,6 +140,11 @@ namespace Assistant.UI
         private static HighlightType[] GetHighlightTypes()
         {
             return (HighlightType[])Enum.GetValues(typeof(HighlightType));
+        }
+
+        public void SetControl(FastColoredTextBox scriptEditor)
+        {
+            _scriptEditor = scriptEditor;
         }
 
         public void SetEditor(FastColoredTextBox scriptEditor, bool popoutEditor)

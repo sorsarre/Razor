@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Assistant.Scripts.Engine;
 using Assistant.Scripts;
 using FastColoredTextBoxNS;
 
@@ -12,7 +7,6 @@ namespace Assistant.UI
 {
     class ScriptTabManager
     {
-        private static FastColoredTextBox _scriptEditor;
         private static TreeView _scriptTree;
         private static ListBox _variableList;
         private static ScriptEditorManager _editorManager = new ScriptEditorManager();
@@ -25,9 +19,10 @@ namespace Assistant.UI
             TreeView scriptTree,
             ListBox variableList)
         {
-            _scriptEditor = scriptEditor;
             _scriptTree = scriptTree;
             _variableList = variableList;
+
+            EditorManager.SetControl(scriptEditor);
 
             ScriptManager.OnScriptError += OnScriptError;
             ScriptManager.OnScriptStarted += OnScriptStarted;
