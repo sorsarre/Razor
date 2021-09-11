@@ -34,6 +34,7 @@ namespace Assistant.UI
             ScriptManager.OnScriptStopped += OnScriptStopped;
             ScriptManager.OnScriptLineUpdate += OnScriptLineUpdate;
             ScriptManager.OnScriptPlayRequested += OnScriptPlayRequested;
+            ScriptManager.OnAddToScript += EditorManager.AddToScript;
         }
 
         public static void OnScriptPlayRequested()

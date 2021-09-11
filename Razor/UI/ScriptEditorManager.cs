@@ -515,15 +515,9 @@ namespace Assistant.UI
             _scriptEditor.Language = FastColoredTextBoxNS.Language.Razor;
         }
 
-        public bool AddToScript(string command)
+        public void AddToScript(string command)
         {
-            if (ScriptManager.Recording)
-            {
-                _scriptEditor?.AppendText(command + Environment.NewLine);
-                return true;
-            }
-
-            return false;
+            _scriptEditor?.AppendText(command + Environment.NewLine);
         }
 
         public void UpdateLineNumber(int lineNum)

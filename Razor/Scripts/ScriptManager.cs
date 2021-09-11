@@ -65,12 +65,14 @@ namespace Assistant.Scripts
         public delegate void OnScriptErrorCallback(Exception ex);
         public delegate void OnScriptLineUpdateCallback(int line);
         public delegate void OnScriptPlayRequestedCallback();
+        public delegate void OnAddToScriptCallback(string text);
 
         public static OnScriptStartedCallback OnScriptStarted { get; set; }
         public static OnScriptStoppedCallback OnScriptStopped { get; set; }
         public static OnScriptErrorCallback OnScriptError { get; set; }
         public static OnScriptLineUpdateCallback OnScriptLineUpdate { get; set; }
         public static OnScriptPlayRequestedCallback OnScriptPlayRequested { get; set; }
+        public static OnAddToScriptCallback OnAddToScript { get; set; }
 
         private class ScriptTimer : Timer
         {
@@ -396,7 +398,12 @@ namespace Assistant.Scripts
 
         public static bool AddToScript(string command)
         {
-            // FIXME
+            if (Recording)
+            {
+                OnAddToScript?.Invoke(command);
+                return true;
+            }
+
             return false;
         }
 
