@@ -76,6 +76,15 @@ namespace Assistant.UI
             FriendsManager.RemoveFriend(group, _friendList.SelectedIndex);
         }
 
+        public static void ToggleFriendList(bool enable)
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            FriendsManager.EnableFriendsGroup(group, enable);
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>
