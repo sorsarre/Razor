@@ -268,7 +268,7 @@ namespace Assistant.Core
 
         public static void EnableFriendsGroup(FriendGroup group, bool enabled)
         {
-            if (FriendGroups.Contains(group))
+            if (group != null)
             {
                 group.Enabled = enabled;
             }
@@ -276,20 +276,15 @@ namespace Assistant.Core
 
         public static bool FriendsGroupExists(string group)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            return FriendGroups.Any(g =>
             {
-                if (friendGroup.GroupName.ToLower().Equals(group.ToLower()))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+                return g.GroupName.ToLower().Equals(group.ToLower());
+            });
         }
 
         public static bool RemoveFriend(FriendGroup group, int index)
         {
-            if (FriendGroups.Contains(group))
+            if (group != null)
             {
                 group.Friends.RemoveAt(index);
                 RedrawList(group);
@@ -333,7 +328,7 @@ namespace Assistant.Core
 
         public static void SetOverheadFormat(FriendGroup group, string format)
         {
-            if (FriendGroups.Contains(group))
+            if (group != null)
             {
                 group.OverheadFormat = format;
             }
@@ -341,7 +336,7 @@ namespace Assistant.Core
 
         public static void SetOverheadHue(FriendGroup group, int hue)
         {
-            if (FriendGroups.Contains(group))
+            if (group != null)
             {
                 group.OverheadFormatHue = hue;
             }
@@ -349,7 +344,7 @@ namespace Assistant.Core
 
         public static void SetOverheadFormatEnabled(FriendGroup group, bool enabled)
         {
-            if (FriendGroups.Contains(group))
+            if (group != null)
             {
                 group.OverheadFormatEnabled = enabled;
             }
