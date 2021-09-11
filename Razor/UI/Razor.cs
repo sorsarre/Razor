@@ -5719,30 +5719,7 @@ namespace Assistant
 
         private void setFriendsFormatHue_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            friendFormat.SafeAction(s =>
-            {
-                FriendsManager.FriendGroup group = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-
-                HueEntry h = new HueEntry(group.OverheadFormatHue);
-
-                if (h.ShowDialog(this) == DialogResult.OK)
-                {
-                    int hueIdx = h.Hue;
-                    
-                    if (hueIdx > 0 && hueIdx < 3000)
-                        s.BackColor = Hues.GetHue(hueIdx - 1).GetColor(HueEntry.TextHueIDX);
-                    else
-                        s.BackColor = Color.White;
-
-                    s.ForeColor = (s.BackColor.GetBrightness() < 0.35 ? Color.White : Color.Black);
-
-                    FriendsManager.SetOverheadHue((FriendsManager.FriendGroup)friendsGroup.SelectedItem,
-                        hueIdx);
-                }
-            });
+            FriendListManager.SetOverheadHue();
         }
 
         private void friendAddTarget_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)

@@ -111,6 +111,37 @@ namespace Assistant.UI
             FriendsManager.SetOverheadFormatEnabled(group, enable);
         }
 
+        public static void SetOverheadHue()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+            {
+                return;
+            }
+
+            _friendFormat.SafeAction(s =>
+            {
+                var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+
+                HueEntry h = new HueEntry(group.OverheadFormatHue);
+
+                if (h.ShowDialog(_dialogOwner) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                int hueIdx = h.Hue;
+
+                if (hueIdx > 0 && hueIdx < 3000)
+                    s.BackColor = Hues.GetHue(hueIdx - 1).GetColor(HueEntry.TextHueIDX);
+                else
+                    s.BackColor = Color.White;
+
+                s.ForeColor = (s.BackColor.GetBrightness() < 0.35 ? Color.White : Color.Black);
+
+                FriendsManager.SetOverheadHue(group, hueIdx);
+            });
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>
