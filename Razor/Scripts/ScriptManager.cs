@@ -50,8 +50,6 @@ namespace Assistant.Scripts
 
         private static TreeView ScriptTree { get; set; }
 
-        private static ListBox ScriptVariableList { get; set; }
-
         private static Script _queuedScript;
 
         public static bool BlockPopupMenu { get; set; }
@@ -342,10 +340,9 @@ namespace Assistant.Scripts
             Timer = new ScriptTimer();
         }
 
-        public static void SetControls(TreeView scriptTree, ListBox scriptVariables)
+        public static void SetControls(TreeView scriptTree)
         {
             ScriptTree = scriptTree;
-            ScriptVariableList = scriptVariables;
         }
 
         public static void OnLogin()
@@ -376,24 +373,6 @@ namespace Assistant.Scripts
 
         private static List<RazorScript> _scriptList { get; set; }
 
-        public static void RedrawScriptVariables()
-        {
-            ScriptVariableList?.SafeAction(s =>
-            {
-                s.BeginUpdate();
-                s.Items.Clear();
-
-                foreach (ScriptVariables.ScriptVariable at in ScriptVariables.ScriptVariableList)
-                {
-                    s.Items.Add($"'{at.Name}' ({at.TargetInfo.Serial})");
-                }
-
-                s.EndUpdate();
-                s.Refresh();
-                s.Update();
-            });
-        }
-
         public static bool AddToScript(string command)
         {
             if (Recording)
@@ -417,7 +396,7 @@ namespace Assistant.Scripts
                 s.Update();
             });
 
-            RedrawScriptVariables();
+            ScriptVariables.OnItemsChanged?.Invoke();
         }
 
         public static TreeNode GetScriptDirNode()

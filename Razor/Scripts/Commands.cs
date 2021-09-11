@@ -213,11 +213,7 @@ namespace Assistant.Scripts
 
                 variable = new ScriptVariables.ScriptVariable(varname, new TargetInfo());
 
-                ScriptVariables.ScriptVariableList.Add(variable);
-
-                ScriptVariables.RegisterVariable(varname);
-
-                ScriptManager.RedrawScriptVariables();
+                ScriptVariables.AddVariable(variable);
             }
 
             Interpreter.Timeout(vars.Length == 2 ? vars[1].AsUInt() : 30000, () => { return true; });

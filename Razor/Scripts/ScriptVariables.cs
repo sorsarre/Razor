@@ -66,8 +66,7 @@ namespace Assistant.Scripts
 
                 bool foundVar = false;
 
-                foreach (ScriptVariable sV in ScriptVariableList
-                )
+                foreach (ScriptVariable sV in ScriptVariableList)
                 {
                     if (sV.Name.Equals(Name, StringComparison.OrdinalIgnoreCase))
                     {
@@ -81,13 +80,16 @@ namespace Assistant.Scripts
                     }
                 }
 
-                // Save and reload the vars
                 if (foundVar)
-                    Assistant.Engine.MainWindow.SaveScriptVariables();
+                    OnItemsChanged?.Invoke();
 
                 TargetWasSet = true;
             }
         }
+
+        public delegate void OnItemsChangedCallback();
+
+        public static OnItemsChangedCallback OnItemsChanged { get; set; }
 
         public static List<ScriptVariable> ScriptVariableList = new List<ScriptVariable>();
 
@@ -128,10 +130,10 @@ namespace Assistant.Scripts
                     };
 
                     ScriptVariable scriptVariable = new ScriptVariable(el.GetAttribute("name"), target);
-                    ScriptVariableList.Add(scriptVariable);
-
-                    RegisterVariable(scriptVariable.Name);
+                    AddVariableQuiet(scriptVariable);
                 }
+
+                OnItemsChanged?.Invoke();
             }
             catch
             {
@@ -139,14 +141,43 @@ namespace Assistant.Scripts
             }
         }
 
-        public static void RegisterVariable(string name)
+        private static void AddVariableQuiet(ScriptVariable variable)
         {
-            Interpreter.RegisterAliasHandler(name, ScriptVariableHandler);
+            ScriptVariableList.Add(variable);
+            Interpreter.RegisterAliasHandler(variable.Name, ScriptVariableHandler);
         }
 
-        public static void UnregisterVariable(string name)
+        public static void AddVariable(ScriptVariable variable)
         {
-            Interpreter.UnregisterAliasHandler(name);
+            AddVariableQuiet(variable);
+            OnItemsChanged?.Invoke();
+        }
+
+        public static void RemoveVariableAt(int index)
+        {
+            if (index < 0 || index >= ScriptVariableList.Count)
+            {
+                return;
+            }
+
+            var variable = ScriptVariableList[index];
+            Interpreter.UnregisterAliasHandler(variable.Name);
+            ScriptVariableList.RemoveAt(index);
+
+            OnItemsChanged?.Invoke();
+        }
+
+        public static void SetTargetInfoAt(int index, TargetInfo ti)
+        {
+            if (index < 0 || index >= ScriptVariableList.Count)
+            {
+                return;
+            }
+
+            var variable = ScriptVariableList[index];
+            variable.TargetInfo = ti;
+
+            OnItemsChanged?.Invoke();
         }
 
         private static uint ScriptVariableHandler(string alias)

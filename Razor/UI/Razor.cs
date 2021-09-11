@@ -78,7 +78,7 @@ namespace Assistant
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
             SoundMusicManager.OnPlayableMusicChanged += this.RefreshMusicList;
             SoundMusicManager.OnSoundFiltersChanged += this.RefreshSoundFilter;
-            ScriptManager.SetControls(scriptTree, scriptVariables);
+            ScriptManager.SetControls(scriptTree);
             ScriptTabManager.SetControls(scriptEditor, scriptTree, scriptVariables);
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
@@ -2855,7 +2855,7 @@ namespace Assistant
 
             RebuildScriptCache();
 
-            ScriptManager.RedrawScriptVariables();
+            ScriptTabManager.RedrawScriptVariables();
         }
 
         public Macro LastSelectedMacro { get; set; }
@@ -6159,11 +6159,6 @@ namespace Assistant
             MacroManager.DisplayMacroVariables(macroVariables);
         }
 
-        public void SaveScriptVariables()
-        {
-            ScriptManager.RedrawScripts();
-        }
-
         private void filterDaemonGraphics_CheckedChanged(object sender, EventArgs e)
         {
             Config.SetProperty("FilterDaemonGraphics", filterDaemonGraphics.Checked);
@@ -6498,23 +6493,15 @@ namespace Assistant
             {
                 string name = InputBox.GetString();
 
-                foreach (ScriptVariables.ScriptVariable mV in ScriptVariables.ScriptVariableList
-                )
+                if (ScriptVariables.GetVariable(name) != null)
                 {
-                    if (mV.Name.ToLower().Equals(name.ToLower()))
-                    {
-                        MessageBox.Show(this, "Pick a unique Script Variable name and try again",
-                            "New Script Variable", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                    MessageBox.Show(this, "Pick a unique Script Variable name and try again",
+                                    "New Script Variable", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
-                ScriptVariables.ScriptVariableList.Add(
-                    new ScriptVariables.ScriptVariable(name, t));
-
-                ScriptVariables.RegisterVariable(name);
-
-                ScriptManager.RedrawScripts();
+                var variable = new ScriptVariables.ScriptVariable(name, t);
+                ScriptVariables.AddVariable(variable);
             }
 
             Engine.MainWindow.ShowMe();
@@ -6532,9 +6519,7 @@ namespace Assistant
                 Z = pt.Z
             };
 
-            ScriptVariables.ScriptVariableList[scriptVariables.SelectedIndex].TargetInfo = t;
-
-            ScriptManager.RedrawScripts();
+            ScriptVariables.SetTargetInfoAt(scriptVariables.SelectedIndex, t);
 
             Engine.MainWindow.ShowMe();
         }
@@ -6557,13 +6542,7 @@ namespace Assistant
             if (ScriptManager.Running || ScriptManager.Recording || World.Player == null)
                 return;
 
-            if (scriptVariables.SelectedIndex < 0)
-                return;
-
-            ScriptVariables.UnregisterVariable(ScriptVariables.ScriptVariableList[scriptVariables.SelectedIndex].Name);
-            ScriptVariables.ScriptVariableList.RemoveAt(scriptVariables.SelectedIndex);
-
-            ScriptManager.RedrawScripts();
+            ScriptVariables.RemoveVariableAt(scriptVariables.SelectedIndex);
         }
 
         private void autoSaveScript_CheckedChanged(object sender, EventArgs e)

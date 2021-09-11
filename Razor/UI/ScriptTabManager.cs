@@ -30,6 +30,7 @@ namespace Assistant.UI
             ScriptManager.OnScriptLineUpdate += OnScriptLineUpdate;
             ScriptManager.OnScriptPlayRequested += OnScriptPlayRequested;
             ScriptManager.OnAddToScript += EditorManager.AddToScript;
+            ScriptVariables.OnItemsChanged += RedrawScriptVariables;
         }
 
         public static void OnScriptPlayRequested()
@@ -93,6 +94,24 @@ namespace Assistant.UI
             }
 
             _scriptTree.SelectedNode = node;
+        }
+
+        public static void RedrawScriptVariables()
+        {
+            _variableList?.SafeAction(s =>
+            {
+                s.BeginUpdate();
+                s.Items.Clear();
+
+                foreach (ScriptVariables.ScriptVariable at in ScriptVariables.ScriptVariableList)
+                {
+                    s.Items.Add($"'{at.Name}' ({at.TargetInfo.Serial})");
+                }
+
+                s.EndUpdate();
+                s.Refresh();
+                s.Update();
+            });
         }
     }
 }
