@@ -100,6 +100,17 @@ namespace Assistant.UI
             FriendsManager.EnableFriendsGroup(group, enable);
         }
 
+        public static void SetOverheadFormatEnabled(bool enable)
+        {
+            if (_friendGroups.SelectedIndex < 0)
+            {
+                return;
+            }
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            FriendsManager.SetOverheadFormatEnabled(group, enable);
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>

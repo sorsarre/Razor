@@ -5512,11 +5512,7 @@ namespace Assistant
 
         private void showFriendOverhead_CheckedChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            FriendsManager.SetOverheadFormatEnabled((FriendsManager.FriendGroup)friendsGroup.SelectedItem,
-                showFriendOverhead.Checked);
+            FriendListManager.SetOverheadFormatEnabled(showFriendOverhead.Checked);
         }
 
         private void dispDeltaOverhead_CheckedChanged(object sender, EventArgs e)
