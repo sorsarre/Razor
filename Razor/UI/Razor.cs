@@ -73,6 +73,7 @@ namespace Assistant
             Language.LoadControlNames(this);
 
             FriendsManager.SetControls(friendsGroup, friendsList);
+            FriendListManager.SetControls(this, friendsGroup, friendsList, friendFormat);
             DressList.SetControls(dressList, dressItems);
             TargetFilterManager.OnItemsChanged += this.RefreshTargetFilters;
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
@@ -708,7 +709,7 @@ namespace Assistant
             }
             else if (tabs.SelectedTab == friendsTab)
             {
-                FriendsManager.RedrawGroup();
+                FriendListManager.RedrawGroups();
             }
             else if (tabs.SelectedTab == screenshotTab)
             {

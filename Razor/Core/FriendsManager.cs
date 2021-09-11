@@ -34,7 +34,7 @@ namespace Assistant.Core
         private static ListBox _friendList;
         private static GroupHotKeyManager _hotkeyManager = new GroupHotKeyManager();
 
-        private static List<FriendGroup> FriendGroups = new List<FriendGroup>();
+        public static List<FriendGroup> FriendGroups = new List<FriendGroup>();
 
         public static void SetControls(ComboBox friendsGroup, ListBox friendsList)
         {
