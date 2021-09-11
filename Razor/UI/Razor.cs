@@ -5681,11 +5681,7 @@ namespace Assistant
 
         private void friendsListEnabled_CheckedChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            FriendsManager.EnableFriendsGroup((FriendsManager.FriendGroup) friendsGroup.SelectedItem,
-                friendsListEnabled.Checked);
+            FriendListManager.ToggleFriendList(friendsListEnabled.Checked);
         }
 
         private void friendOverheadFormat_TextChanged(object sender, EventArgs e)
