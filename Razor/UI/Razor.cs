@@ -78,7 +78,8 @@ namespace Assistant
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
             SoundMusicManager.OnPlayableMusicChanged += this.RefreshMusicList;
             SoundMusicManager.OnSoundFiltersChanged += this.RefreshSoundFilter;
-            ScriptManager.SetControls(scriptEditor, scriptTree, scriptVariables);
+            ScriptManager.SetControls(scriptTree, scriptVariables);
+            ScriptTabManager.SetControls(scriptEditor, scriptTree, scriptVariables);
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
@@ -113,7 +114,7 @@ namespace Assistant
             Show();
             BringToFront();
             tabs_IndexChanged(this, null); // load first tab
-            ScriptManager.InitScriptEditor();
+            ScriptTabManager.EditorManager.InitScriptEditor();
 
             m_ProfileConfirmLoad = false;
             Config.SetupProfilesList(profiles, Config.CurrentProfile.Name);
@@ -6691,7 +6692,7 @@ namespace Assistant
                 s.TopMost = false;
                 s.Hide();
 
-                ScriptManager.SetEditor(scriptEditor, false);
+                ScriptTabManager.EditorManager.SetEditor(scriptEditor, false);
             });
         }
 
@@ -7386,7 +7387,7 @@ namespace Assistant
         {
             Config.SetProperty("DisableScriptTooltips", disableScriptTooltips.Checked);
 
-            ScriptManager.InitScriptEditor();
+            ScriptTabManager.EditorManager.InitScriptEditor();
         }
 
         private RazorScript _selectedScript;
@@ -7429,9 +7430,8 @@ namespace Assistant
                     }
                 }
                 
-                ScriptManager.SetEditorText(_selectedScript);
-
-                ScriptManager.ClearAllHighlightLines();
+                ScriptTabManager.EditorManager.SetEditorText(_selectedScript);
+                ScriptTabManager.EditorManager.ClearAllHighlightLines();
             });
         }
 
