@@ -73,7 +73,15 @@ namespace Assistant
             Language.LoadControlNames(this);
 
             CounterListManager.SetControls(this, counters);
-            FriendsManager.SetControls(friendsGroup, friendsList);
+            FriendListManager.SetControls(
+                this,
+                friendsGroup,
+                friendsList,
+                friendFormat,
+                friendsListEnabled,
+                showFriendOverhead,
+                friendOverheadFormat,
+                targetIndicatorFormat);
             DressListManager.SetControls(this, dressList, dressItems);
             TargetFilterManager.OnItemsChanged += this.RefreshTargetFilters;
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
@@ -685,7 +693,7 @@ namespace Assistant
             }
             else if (tabs.SelectedTab == friendsTab)
             {
-                FriendsManager.RedrawGroup();
+                FriendListManager.RedrawGroups();
             }
             else if (tabs.SelectedTab == screenshotTab)
             {
@@ -5224,11 +5232,7 @@ namespace Assistant
 
         private void showFriendOverhead_CheckedChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            FriendsManager.SetOverheadFormatEnabled((FriendsManager.FriendGroup)friendsGroup.SelectedItem,
-                showFriendOverhead.Checked);
+            FriendListManager.SetOverheadFormatEnabled(showFriendOverhead.Checked);
         }
 
         private void dispDeltaOverhead_CheckedChanged(object sender, EventArgs e)
@@ -5364,147 +5368,42 @@ namespace Assistant
 
         private void friendRemoveSelected_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0 || friendsList.SelectedIndex < 0)
-                return;
-
-            FriendsManager.RemoveFriend((FriendsManager.FriendGroup) friendsGroup.SelectedItem,
-                friendsList.SelectedIndex);
+            FriendListManager.RemoveFriend();
         }
 
         private void friendsGroupAdd_Click(object sender, EventArgs e)
         {
-            if (InputBox.Show(this, "Add Friend Group", "Enter the name of this new Friend Group"))
-            {
-                string name = InputBox.GetString();
-
-                if (!string.IsNullOrEmpty(name) && !FriendsManager.FriendsGroupExists(name))
-                {
-                    FriendsManager.AddFriendGroup(name);
-                }
-                else
-                {
-                    MessageBox.Show(this, "Invalid name, or friends group already exists", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            FriendListManager.AddFriendGroup();
         }
 
         private void friendsGroupRemove_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (MessageBox.Show(this, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                if (FriendsManager.DeleteFriendGroup((FriendsManager.FriendGroup) friendsGroup.SelectedItem))
-                {
-                    FriendsManager.RedrawGroup();
-
-                    if (friendsGroup.Items.Count > 0)
-                    {
-                        friendsGroup.SafeAction(s => s.SelectedIndex = 0);
-                    }
-                    else
-                    {
-                        friendsList.SafeAction(s => s.Items.Clear());
-                    }
-                }
-            }
+            FriendListManager.RemoveFriendGroup();
         }
 
         private void friendsGroup_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            var friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-
-            friendsListEnabled.SafeAction(s => s.Checked = friendGroup.Enabled);
-
-            friendFormat.SafeAction(s =>
-            {
-                int hueIdx = friendGroup.OverheadFormatHue;
-
-                if (hueIdx > 0 && hueIdx < 3000)
-                    s.BackColor = Hues.GetHue(hueIdx - 1).GetColor(HueEntry.TextHueIDX);
-                else
-                    s.BackColor = SystemColors.Control;
-
-                s.ForeColor = (s.BackColor.GetBrightness() < 0.35 ? Color.White : Color.Black);
-            });
-
-            friendOverheadFormat.SafeAction(s => s.Text = friendGroup.OverheadFormat);
-            showFriendOverhead.SafeAction(s => s.Checked = friendGroup.OverheadFormatEnabled);
-
-            FriendsManager.RedrawList(friendGroup);
+            FriendListManager.OnFriendGroupSelected();
         }
 
         private void friendClearList_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (MessageBox.Show(this, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-                friendGroup.Friends.Clear();
-
-                FriendsManager.RedrawList(friendGroup);
-            }
+            FriendListManager.ClearFriends();
         }
 
         private void friendsListEnabled_CheckedChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            FriendsManager.EnableFriendsGroup((FriendsManager.FriendGroup) friendsGroup.SelectedItem,
-                friendsListEnabled.Checked);
+            FriendListManager.ToggleFriendList(friendsListEnabled.Checked);
         }
 
         private void friendOverheadFormat_TextChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            //FriendOverheadFormat
-            if (string.IsNullOrEmpty(friendOverheadFormat.Text))
-            {
-                targetIndicatorFormat.SafeAction(s => s.Text = "[Friend]");
-            }
-
-            friendOverheadFormat.SafeAction(s => FriendsManager.SetOverheadFormat((FriendsManager.FriendGroup)friendsGroup.SelectedItem,
-                s.Text));
+            FriendListManager.SetOverheadFormat();
         }
 
         private void setFriendsFormatHue_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            friendFormat.SafeAction(s =>
-            {
-                FriendsManager.FriendGroup group = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-
-                HueEntry h = new HueEntry(group.OverheadFormatHue);
-
-                if (h.ShowDialog(this) == DialogResult.OK)
-                {
-                    int hueIdx = h.Hue;
-                    
-                    if (hueIdx > 0 && hueIdx < 3000)
-                        s.BackColor = Hues.GetHue(hueIdx - 1).GetColor(HueEntry.TextHueIDX);
-                    else
-                        s.BackColor = Color.White;
-
-                    s.ForeColor = (s.BackColor.GetBrightness() < 0.35 ? Color.White : Color.Black);
-
-                    FriendsManager.SetOverheadHue((FriendsManager.FriendGroup)friendsGroup.SelectedItem,
-                        hueIdx);
-                }
-            });
+            FriendListManager.SetOverheadHue();
         }
 
         private void friendAddTarget_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -5527,43 +5426,25 @@ namespace Assistant
             }
             else
             {
-                FriendsManager.OnTargetAddFriend((FriendsManager.FriendGroup) friendsGroup.SelectedItem);
+                FriendListManager.AddFriend();
             }
         }
 
         private void onAddAllMobilesAsFriends(object sender, System.EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (World.Player == null)
-                return;
-
-            FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-            friendGroup.AddAllMobileAsFriends();
+            FriendListManager.AddAllMobileAsFriends();
         }
 
         private void onAddAllHumanoidsAsFriends(object sender, System.EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (World.Player == null)
-                return;
-
-            FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-            friendGroup.AddAllHumanoidsAsFriends();
+            FriendListManager.AddAllHumanoidsAsFriends();
         }
 
         private void friendsList_KeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
-                if (friendsList.SelectedIndex < 0 || friendsGroup.SelectedIndex < 0)
-                    return;
-
-                FriendsManager.RemoveFriend((FriendsManager.FriendGroup) friendsGroup.SelectedItem,
-                    friendsList.SelectedIndex);
+                FriendListManager.RemoveFriend();
             }
         }
 
@@ -5584,57 +5465,12 @@ namespace Assistant
 
         private void onImportFriends(object sender, System.EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            try
-            {
-                if (Clipboard.GetText().Contains("!Razor.Friends.Import"))
-                {
-                    List<string> friendsImport = Clipboard.GetText()
-                        .Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.None).ToList();
-
-                    friendsImport.RemoveAt(0);
-
-                    foreach (string import in friendsImport)
-                    {
-                        if (string.IsNullOrEmpty(import))
-                            continue;
-
-                        string[] friend = import.Split('#');
-
-                        FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-
-                        friendGroup.AddFriend(friend[0], Serial.Parse(friend[1]));
-                    }
-
-                    Clipboard.Clear();
-                }
-            }
-            catch
-            {
-            }
+            FriendListManager.ImportFriends();
         }
 
         private void onExportFriends(object sender, System.EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0 || friendsList.Items.Count == 0)
-                return;
-
-            StringBuilder sb = new StringBuilder();
-
-            sb.AppendLine("!Razor.Friends.Import");
-
-
-            FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-
-            foreach (FriendsManager.Friend friend in friendGroup.Friends)
-            {
-                sb.AppendLine($"{friend.Name}#{friend.Serial}");
-            }
-
-
-            Clipboard.SetDataObject(sb.ToString(), true);
+            FriendListManager.ExportFriends();
         }
 
         private void setTargetIndicatorHue_Click(object sender, EventArgs e)
@@ -5813,13 +5649,7 @@ namespace Assistant
 
         private void FriendAddTarget_Click(object sender, EventArgs e)
         {
-            if (World.Player == null)
-                return;
-
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            ((FriendsManager.FriendGroup) friendsGroup.SelectedItem).AddFriendToGroup();
+            FriendListManager.AddFriend();
         }
 
         private TreeNode SearchTreeView(string p_sSearchTerm, TreeNodeCollection p_Nodes)

@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows.Forms;
 using System.Xml;
 using Assistant.UI;
 
@@ -30,21 +29,24 @@ namespace Assistant.Core
 {
     public static class FriendsManager
     {
-        private static ComboBox _friendGroups;
-        private static ListBox _friendList;
+        private static GroupHotKeyManager _hotkeyManager = new GroupHotKeyManager();
 
-        private static List<FriendGroup> FriendGroups = new List<FriendGroup>();
+        public static List<FriendGroup> FriendGroups = new List<FriendGroup>();
 
-        public static void SetControls(ComboBox friendsGroup, ListBox friendsList)
-        {
-            _friendGroups = friendsGroup;
-            _friendList = friendsList;
-        }
+        public delegate void OnGroupsChangedCallback();
+        public delegate void OnFriendsChangedCallback(FriendGroup group);
+        public delegate void OnFriendTargetCallback();
 
-        public static void OnTargetAddFriend(FriendGroup group)
+        public static OnGroupsChangedCallback OnGroupsChanged { get; set; }
+        public static OnFriendsChangedCallback OnFriendsChanged { get; set; }
+        public static OnFriendTargetCallback OnFriendTarget { get; set; }
+
+        public static void AddFriendToGroup(FriendGroup group)
         {
             World.Player.SendMessage(MsgLevel.Friend, LocString.TargFriendAdd);
-            Targeting.OneTimeTarget(group.OnAddFriendTarget);
+            Targeting.OneTimeTarget((location, serial, loc, gfx) => {
+                OnAddFriendTarget(group, location, serial, loc, gfx);
+            });
         }
 
         public class Friend
@@ -55,6 +57,46 @@ namespace Assistant.Core
             public override string ToString()
             {
                 return $"{Name} ({Serial})";
+            }
+        }
+
+        private class GroupHotKeyManager
+        {
+            private void SafeAction(Action action)
+            {
+                if (Engine.MainWindow == null)
+                {
+                    action?.Invoke();
+                }
+                else
+                {
+                    Engine.MainWindow.SafeAction(s => action?.Invoke());
+                }
+            }
+
+            public void Add(FriendGroup group)
+            {
+                SafeAction(() =>
+                {
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {group.GroupName}",
+                        () => AddFriendToGroup(group));
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {group.GroupName}", group.ToggleFriendGroup);
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {group.GroupName}",
+                        () => AddAllMobileAsFriends(group));
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Humanoids: {group.GroupName}",
+                        () => AddAllHumanoidsAsFriends(group));
+                });
+            }
+
+            public void Remove(FriendGroup group)
+            {
+                SafeAction(() =>
+                {
+                    HotKey.Remove($"Add Target To: {group.GroupName}");
+                    HotKey.Remove($"Toggle Group: {group.GroupName}");
+                    HotKey.Remove($"Add All Mobiles: {group.GroupName}");
+                    HotKey.Remove($"Add All Humanoids: {group.GroupName}");
+                });
             }
         }
 
@@ -73,59 +115,7 @@ namespace Assistant.Core
                 Friends = new List<Friend>();
             }
 
-            public void AddHotKeys()
-            {
-                if (Engine.MainWindow == null)
-                {
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {GroupName}", AddFriendToGroup);
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {GroupName}", ToggleFriendGroup);
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {GroupName}",
-                        AddAllMobileAsFriends);
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Humanoids: {GroupName}",
-                        AddAllHumanoidsAsFriends);
-                }
-                else
-                {
-                    Engine.MainWindow.SafeAction(s =>
-                    {
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {GroupName}", AddFriendToGroup);
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {GroupName}", ToggleFriendGroup);
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {GroupName}",
-                            AddAllMobileAsFriends);
-                        HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Humanoids: {GroupName}",
-                            AddAllHumanoidsAsFriends);
-                    });
-                }
-            }
-
-            public void RemoveHotKeys()
-            {
-                if (Engine.MainWindow == null)
-                {
-                    HotKey.Remove($"Add Target To: {GroupName}");
-                    HotKey.Remove($"Toggle Group: {GroupName}");
-                    HotKey.Remove($"Add All Mobiles: {GroupName}");
-                    HotKey.Remove($"Add All Humanoids: {GroupName}");
-                }
-                else
-                {
-                    Engine.MainWindow.SafeAction(s =>
-                    {
-                        HotKey.Remove($"Add Target To: {GroupName}");
-                        HotKey.Remove($"Toggle Group: {GroupName}");
-                        HotKey.Remove($"Add All Mobiles: {GroupName}");
-                        HotKey.Remove($"Add All Humanoids: {GroupName}");
-                    });
-                }
-            }
-
-            public void AddFriendToGroup()
-            {
-                World.Player.SendMessage(MsgLevel.Friend, $"Target friend to add to group '{GroupName}'");
-                Targeting.OneTimeTarget(OnAddFriendTarget);
-            }
-
-            private void ToggleFriendGroup()
+            public void ToggleFriendGroup()
             {
                 if (Enabled)
                 {
@@ -146,29 +136,6 @@ namespace Assistant.Core
                 return $"{GroupName}";
             }
 
-            public void OnAddFriendTarget(bool location, Serial serial, Point3D loc, ushort gfx)
-            {
-                Engine.MainWindow.SafeAction(s => s.ShowMe());
-
-                if (!location && serial.IsMobile && serial != World.Player.Serial)
-                {
-                    Mobile m = World.FindMobile(serial);
-
-                    if (m == null)
-                        return;
-
-                    if (AddFriend(m.Name, serial))
-                    {
-                        m.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
-                        m.OPLChanged();
-                    }
-                    else
-                    {
-                        World.Player.SendMessage(MsgLevel.Warning, $"'{m.Name}' is already in '{GroupName}'");
-                    }
-                }
-            }
-
             public bool AddFriend(string friendName, Serial friendSerial)
             {
                 if (Friends.Any(f => f.Serial == friendSerial) == false)
@@ -180,12 +147,6 @@ namespace Assistant.Core
                     };
 
                     Friends.Add(newFriend);
-
-                    if (_friendGroups.SelectedItem == this)
-                    {
-                        RedrawList(this);
-                    }
-
                     World.Player?.SendMessage(MsgLevel.Friend, $"Added '{friendName}' to '{GroupName}'");
 
                     return true;
@@ -193,41 +154,74 @@ namespace Assistant.Core
 
                 return false;
             }
+        }
 
-            public void AddAllMobileAsFriends()
+        private static bool IsValidFriendTarget(Mobile mobile)
+        {
+            return !IsFriend(mobile.Serial) && mobile.Serial.IsMobile && mobile.Serial != World.Player.Serial;
+        }
+
+        private static void OnAddFriendTarget(FriendGroup group, bool location, Serial serial, Point3D loc, ushort gfx)
+        {
+            OnFriendTarget?.Invoke();
+
+            if (!location && serial.IsMobile && serial != World.Player.Serial)
             {
-                List<Mobile> mobiles = World.MobilesInRange(12);
+                Mobile m = World.FindMobile(serial);
 
-                foreach (Mobile mobile in mobiles)
+                if (m == null)
+                    return;
+
+                if (group.AddFriend(m.Name, serial))
                 {
-                    if (!IsFriend(mobile.Serial) && mobile.Serial.IsMobile && mobile.Serial != World.Player.Serial)
+                    m.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
+                    m.OPLChanged();
+
+                    OnFriendsChanged?.Invoke(group);
+                }
+                else
+                {
+                    World.Player.SendMessage(MsgLevel.Warning, $"'{m.Name}' is already in '{group.GroupName}'");
+                }
+            }
+        }
+
+        public static void AddAllMobileAsFriends(FriendGroup group)
+        {
+            List<Mobile> mobiles = World.MobilesInRange(12);
+
+            foreach (Mobile mobile in mobiles)
+            {
+                if (IsValidFriendTarget(mobile))
+                {
+                    if (group.AddFriend(mobile.Name, mobile.Serial))
                     {
-                        if (AddFriend(mobile.Name, mobile.Serial))
-                        {
-                            mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
-                            mobile.OPLChanged();
-                        }
+                        mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
+                        mobile.OPLChanged();
                     }
                 }
             }
 
-            public void AddAllHumanoidsAsFriends()
-            {
-                List<Mobile> mobiles = World.MobilesInRange(12);
+            OnFriendsChanged?.Invoke(group);
+        }
 
-                foreach (Mobile mobile in mobiles)
+        public static void AddAllHumanoidsAsFriends(FriendGroup group)
+        {
+            List<Mobile> mobiles = World.MobilesInRange(12);
+
+            foreach (Mobile mobile in mobiles)
+            {
+                if (IsValidFriendTarget(mobile) && mobile.IsHuman)
                 {
-                    if (!IsFriend(mobile.Serial) && mobile.Serial.IsMobile && mobile.Serial != World.Player.Serial &&
-                        mobile.IsHuman)
+                    if (group.AddFriend(mobile.Name, mobile.Serial))
                     {
-                        if (AddFriend(mobile.Name, mobile.Serial))
-                        {
-                            mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
-                            mobile.OPLChanged();
-                        }
+                        mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
+                        mobile.OPLChanged();
                     }
                 }
             }
+
+            OnFriendsChanged?.Invoke(group);
         }
 
         public static bool IsFriendOverhead(Serial serial, ref FriendGroup group)
@@ -270,82 +264,42 @@ namespace Assistant.Core
 
         public static void EnableFriendsGroup(FriendGroup group, bool enabled)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (group != null)
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.Enabled = enabled;
-                    return;
-                }
+                group.Enabled = enabled;
             }
         }
 
         public static bool FriendsGroupExists(string group)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            return FriendGroups.Any(g =>
             {
-                if (friendGroup.GroupName.ToLower().Equals(group.ToLower()))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public static bool IsFriendsGroupEnabled(FriendGroup group)
-        {
-            foreach (FriendGroup friendGroup in FriendGroups)
-            {
-                if (friendGroup == group)
-                {
-                    return friendGroup.Enabled;
-                }
-            }
-
-            return false;
+                return g.GroupName.ToLower().Equals(group.ToLower());
+            });
         }
 
         public static bool RemoveFriend(FriendGroup group, int index)
         {
-            foreach (var friendGroup in FriendGroups)
+            if (group != null)
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.Friends.RemoveAt(index);
-
-                    RedrawList(group);
-
-                    return true;
-                }
+                group.Friends.RemoveAt(index);
+                OnFriendsChanged?.Invoke(group);
+                return true;
             }
 
             return false;
         }
 
-        public static void ClearFriendGroup(string group)
-        {
-            foreach (var friendGroup in FriendGroups)
-            {
-                if (friendGroup.GroupName.Equals(group))
-                {
-                    friendGroup.Friends.Clear();
-                    return;
-                }
-            }
-        }
-
         public static bool DeleteFriendGroup(FriendGroup group)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            _hotkeyManager.Remove(group);
+            if (FriendGroups.Remove(group))
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.RemoveHotKeys();
-                }
+                OnGroupsChanged?.Invoke();
+                return true;
             }
 
-            return FriendGroups.Remove(group);
+            return false;
         }
 
         public static void AddFriendGroup(string group)
@@ -360,46 +314,33 @@ namespace Assistant.Core
                 OverheadFormatEnabled = true
             };
 
-            friendGroup.AddHotKeys();
-
+            _hotkeyManager.Add(friendGroup);
             FriendGroups.Add(friendGroup);
 
-            RedrawGroup();
+            OnGroupsChanged?.Invoke();
         }
 
         public static void SetOverheadFormat(FriendGroup group, string format)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (group != null)
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.OverheadFormat = format;
-                    return;
-                }
+                group.OverheadFormat = format;
             }
         }
 
         public static void SetOverheadHue(FriendGroup group, int hue)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (group != null)
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.OverheadFormatHue = hue;
-                    return;
-                }
+                group.OverheadFormatHue = hue;
             }
         }
 
         public static void SetOverheadFormatEnabled(FriendGroup group, bool enabled)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            if (group != null)
             {
-                if (friendGroup == group)
-                {
-                    friendGroup.OverheadFormatEnabled = enabled;
-                    return;
-                }
+                group.OverheadFormatEnabled = enabled;
             }
         }
 
@@ -472,7 +413,7 @@ namespace Assistant.Core
                         friendGroup.OverheadFormatEnabled = true;
                     }
 
-                    friendGroup.AddHotKeys();
+                    _hotkeyManager.Add(friendGroup);
 
                     foreach (XmlElement friendEl in el.GetElementsByTagName("friend"))
                     {
@@ -495,7 +436,7 @@ namespace Assistant.Core
                     FriendGroups.Add(friendGroup);
                 }
 
-                RedrawAll();
+                OnGroupsChanged?.Invoke();
             }
             catch (Exception ex)
             {
@@ -507,64 +448,10 @@ namespace Assistant.Core
         {
             foreach (FriendGroup friendGroup in FriendGroups)
             {
-                friendGroup.RemoveHotKeys();
+                _hotkeyManager.Remove(friendGroup);
             }
 
             FriendGroups.Clear();
-        }
-
-        private static void RedrawAll()
-        {
-            RedrawGroup();
-
-            if (_friendGroups?.Items.Count > 0)
-            {
-                RedrawList((FriendGroup) _friendGroups.Items[0]);
-            }
-            else
-            {
-                RedrawList(null); // we just want to clear the list
-            }
-        }
-
-        public static void RedrawGroup()
-        {
-            _friendGroups?.SafeAction(s =>
-            {
-                s.BeginUpdate();
-                s.Items.Clear();
-
-                foreach (FriendGroup friendGroup in FriendGroups)
-                {
-                    s.Items.Add(friendGroup);
-                }
-
-                s.EndUpdate();
-
-                if (s.Items.Count > 0)
-                {
-                    s.SelectedIndex = 0;
-                }
-            });
-        }
-
-        public static void RedrawList(FriendGroup group)
-        {
-            _friendList?.SafeAction(s =>
-            {
-                s.BeginUpdate();
-                s.Items.Clear();
-
-                if (group != null)
-                {
-                    foreach (Friend friend in group.Friends)
-                    {
-                        s.Items.Add(friend);
-                    }
-                }
-
-                s.EndUpdate();
-            });
         }
     }
 }

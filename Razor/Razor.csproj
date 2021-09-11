@@ -390,6 +390,7 @@
     <Compile Include="UI\CounterListManager.cs" />
     <Compile Include="UI\DressListManager.cs" />
     <Compile Include="UI\Ext.cs" />
+    <Compile Include="UI\FriendListManager.cs" />
     <Compile Include="UI\HueEntry.cs">
       <SubType>Form</SubType>
     </Compile>
