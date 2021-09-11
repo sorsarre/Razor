@@ -76,6 +76,21 @@ namespace Assistant.UI
             FriendsManager.RemoveFriend(group, _friendList.SelectedIndex);
         }
 
+        public static void ClearFriends()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            if (MessageBox.Show(_dialogOwner, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+                group.Friends.Clear();
+
+                FriendListManager.RedrawList(group);
+            }
+        }
+
         public static void ToggleFriendList(bool enable)
         {
             if (_friendGroups.SelectedIndex < 0)

@@ -5694,17 +5694,7 @@ namespace Assistant
 
         private void friendClearList_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (MessageBox.Show(this, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-                friendGroup.Friends.Clear();
-
-                FriendsManager.RedrawList(friendGroup);
-            }
+            FriendListManager.ClearFriends();
         }
 
         private void friendsListEnabled_CheckedChanged(object sender, EventArgs e)
