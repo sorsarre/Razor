@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 using Assistant.Scripts;
 using FastColoredTextBoxNS;
@@ -30,6 +31,7 @@ namespace Assistant.UI
             ScriptManager.OnScriptLineUpdate += OnScriptLineUpdate;
             ScriptManager.OnScriptPlayRequested += OnScriptPlayRequested;
             ScriptManager.OnAddToScript += EditorManager.AddToScript;
+            ScriptManager.OnScriptsLoaded += OnScriptsLoaded;
             ScriptVariables.OnItemsChanged += RedrawScriptVariables;
         }
 
@@ -62,7 +64,49 @@ namespace Assistant.UI
             EditorManager.UpdateLineNumber(line);
         }
 
-        private static TreeNode GetScriptDirNode()
+        private static void Recurse(TreeNodeCollection nodes, IList<ScriptManager.ScriptTreeNode> treeNodes)
+        {
+            foreach (var scriptNode in treeNodes)
+            {
+                TreeNode node = null;
+
+                if (scriptNode.Tag != null)
+                {
+                    node = new TreeNode(scriptNode.Text)
+                    {
+                        Tag = scriptNode.Tag
+                    };
+
+                    nodes.Add(node);
+
+                    if (scriptNode.Tag is string)
+                    {
+                        Recurse(node.Nodes, scriptNode.Children);
+                    }
+                }
+            }
+        }
+
+        public static void OnScriptsLoaded(IList<ScriptManager.ScriptTreeNode> treeNodes)
+        {
+            _scriptTree.SafeAction(s =>
+            {
+                s.BeginUpdate();
+                s.Nodes.Clear();
+                Recurse(s.Nodes, treeNodes);
+                s.EndUpdate();
+                s.Refresh();
+                s.Update();
+            });
+        }
+
+        public static void RedrawScripts()
+        {
+            ScriptManager.ReloadScripts();
+            RedrawScriptVariables();
+        }
+
+        public static TreeNode GetScriptDirNode()
         {
             if (_scriptTree?.SelectedNode == null)
             {

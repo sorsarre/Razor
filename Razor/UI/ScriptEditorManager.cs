@@ -164,6 +164,7 @@ namespace Assistant.UI
         
         public void SetEditorText(RazorScript script)
         {
+            ScriptManager.SelectedScript = script;
             _scriptEditor.Text = string.Join("\n", script.Lines);
         }
 

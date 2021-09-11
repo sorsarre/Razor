@@ -26,7 +26,6 @@ using System.Windows.Forms;
 using Assistant.Gumps.Internal;
 using Assistant.Macros;
 using Assistant.Scripts.Engine;
-using Assistant.UI;
 
 namespace Assistant.Scripts
 {
@@ -47,8 +46,6 @@ namespace Assistant.Scripts
         public static bool TargetFound { get; set; }
 
         public static string ScriptPath => Config.GetUserDirectory("Scripts");
-
-        private static TreeView ScriptTree { get; set; }
 
         private static Script _queuedScript;
 
@@ -158,7 +155,7 @@ namespace Assistant.Scripts
 
             _scriptList = new List<RazorScript>();
 
-            Recurse(null, Config.GetUserDirectory("Scripts"));
+            ReloadScripts();
         }
 
         private static void HotkeyTargetTypeScript()
@@ -340,11 +337,6 @@ namespace Assistant.Scripts
             Timer = new ScriptTimer();
         }
 
-        public static void SetControls(TreeView scriptTree)
-        {
-            ScriptTree = scriptTree;
-        }
-
         public static void OnLogin()
         {
             Commands.Register();
@@ -362,13 +354,7 @@ namespace Assistant.Scripts
         {
             StopScript();
             Timer.Stop();
-            Assistant.Engine.MainWindow.LockScriptUI(false);
-            Assistant.Engine.RazorScriptEditorWindow?.LockScriptUI(false);
-        }
-
-        public static void StartEngine()
-        {
-            Timer.Start();
+            OnScriptStopped?.Invoke();
         }
 
         private static List<RazorScript> _scriptList { get; set; }
@@ -384,63 +370,41 @@ namespace Assistant.Scripts
             return false;
         }
 
-        public static void RedrawScripts()
+        public class ScriptTreeNode
         {
-            ScriptTree.SafeAction(s =>
+            public ScriptTreeNode(string text)
             {
-                s.BeginUpdate();
-                s.Nodes.Clear();
-                Recurse(s.Nodes, Config.GetUserDirectory("Scripts"));
-                s.EndUpdate();
-                s.Refresh();
-                s.Update();
-            });
-
-            ScriptVariables.OnItemsChanged?.Invoke();
-        }
-
-        public static TreeNode GetScriptDirNode()
-        {
-            if (ScriptTree.SelectedNode == null)
-            {
-                return null;
+                Text = text;
             }
 
-            if (ScriptTree.SelectedNode.Tag is string)
-                return ScriptTree.SelectedNode;
-                
-            if (!(ScriptTree.SelectedNode.Parent?.Tag is string))
-                return null;
-                
-            return ScriptTree.SelectedNode.Parent;
+            public IList<ScriptTreeNode> Children { get; set; }
+            public object Tag { get; set; }
+            public string Text { get; set; }
         }
 
-        public static void AddScriptNode(TreeNode node)
-        {
-            if (node == null)
-            {
-                ScriptTree.Nodes.Add(node);
-            }
-            else
-            {
-                node.Nodes.Add(node);
-            }
+        public delegate void OnScriptsLoadedCallback(IList<ScriptTreeNode> treeNodes);
+        public static OnScriptsLoadedCallback OnScriptsLoaded { get; set; }
 
-            ScriptTree.SelectedNode = node;
+        public static void ReloadScripts()
+        {
+            var nodes = ScanDirectory(Config.GetUserDirectory("Scripts"));
+            OnScriptsLoaded?.Invoke(nodes);
         }
 
-        private static void Recurse(TreeNodeCollection nodes, string path)
+        private static IList<ScriptTreeNode> ScanDirectory(string path)
         {
+            var nodes = new List<ScriptTreeNode>();
+
             try
             {
                 var razorFiles = Directory.GetFiles(path, "*.razor");
-                razorFiles = razorFiles.OrderBy(fileName => fileName).ToArray();
+                razorFiles = razorFiles.OrderBy(fn => fn).ToArray();
 
                 foreach (var file in razorFiles)
                 {
                     RazorScript script = null;
 
-                    foreach (RazorScript razorScript in _scriptList)
+                    foreach(var razorScript in _scriptList)
                     {
                         if (razorScript.Path.Equals(file))
                         {
@@ -453,15 +417,12 @@ namespace Assistant.Scripts
                         script = AddScript(file);
                     }
 
-                    if (nodes != null)
+                    var node = new ScriptTreeNode(script.Name)
                     {
-                        TreeNode node = new TreeNode(script.Name)
-                        {
-                            Tag = script
-                        };
+                        Tag = script
+                    };
 
-                        nodes.Add(node);
-                    }
+                    nodes.Add(node);
                 }
             }
             catch
@@ -471,26 +432,17 @@ namespace Assistant.Scripts
 
             try
             {
-
                 foreach (string directory in Directory.GetDirectories(path))
                 {
                     if (!string.IsNullOrEmpty(directory) && !directory.Equals(".") && !directory.Equals(".."))
                     {
-                        if (nodes != null)
+                        var node = new ScriptTreeNode($"[{Path.GetFileName(directory)}]")
                         {
-                            TreeNode node = new TreeNode($"[{Path.GetFileName(directory)}]")
-                            {
-                                Tag = directory
-                            };
+                            Tag = directory
+                        };
 
-                            nodes.Add(node);
-
-                            Recurse(node.Nodes, directory);
-                        }
-                        else
-                        {
-                            Recurse(null, directory);
-                        }
+                        node.Children = ScanDirectory(directory);
+                        nodes.Add(node);
                     }
                 }
             }
@@ -498,6 +450,8 @@ namespace Assistant.Scripts
             {
                 // ignored
             }
+
+            return nodes;
         }
 
         public static void GetGumpInfo(string[] param)

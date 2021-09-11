@@ -78,7 +78,6 @@ namespace Assistant
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
             SoundMusicManager.OnPlayableMusicChanged += this.RefreshMusicList;
             SoundMusicManager.OnSoundFiltersChanged += this.RefreshSoundFilter;
-            ScriptManager.SetControls(scriptTree);
             ScriptTabManager.SetControls(scriptEditor, scriptTree, scriptVariables);
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
@@ -2846,7 +2845,7 @@ namespace Assistant
         {
             RazorScript rs = GetScriptSel();
 
-            ScriptManager.RedrawScripts();
+            ScriptTabManager.RedrawScripts();
 
             if (rs != null)
             {
@@ -6334,9 +6333,9 @@ namespace Assistant
                     Path = filePath
                 };
                 
-                TreeNode node = ScriptManager.GetScriptDirNode();
+                TreeNode node = ScriptTabManager.GetScriptDirNode();
 
-                ScriptManager.RedrawScripts();
+                ScriptTabManager.RedrawScripts();
 
                 TreeNode newNode = new TreeNode(script.Name)
                 {
@@ -6397,7 +6396,7 @@ namespace Assistant
                     return;
                 }
 
-                TreeNode node = ScriptManager.GetScriptDirNode();
+                TreeNode node = ScriptTabManager.GetScriptDirNode();
 
                 string path = (node == null || !(node.Tag is string))
                     ? Config.GetUserDirectory("Scripts")
@@ -7615,7 +7614,7 @@ namespace Assistant
                 return;
             }
 
-            TreeNode node = ScriptManager.GetScriptDirNode();
+            TreeNode node = ScriptTabManager.GetScriptDirNode();
 
             try
             {
