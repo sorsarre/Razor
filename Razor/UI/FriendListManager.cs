@@ -42,6 +42,31 @@ namespace Assistant.UI
             }
         }
 
+        public static void RemoveFriendGroup()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            if (MessageBox.Show(_dialogOwner, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+                if (FriendsManager.DeleteFriendGroup(group))
+                {
+                    FriendListManager.RedrawGroups();
+
+                    if (_friendGroups.Items.Count > 0)
+                    {
+                        _friendGroups.SafeAction(s => s.SelectedIndex = 0);
+                    }
+                    else
+                    {
+                        _friendGroups.SafeAction(s => s.Items.Clear());
+                    }
+                }
+            }
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>

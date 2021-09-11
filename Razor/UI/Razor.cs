@@ -5666,26 +5666,7 @@ namespace Assistant
 
         private void friendsGroupRemove_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (MessageBox.Show(this, Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                if (FriendsManager.DeleteFriendGroup((FriendsManager.FriendGroup) friendsGroup.SelectedItem))
-                {
-                    FriendsManager.RedrawGroup();
-
-                    if (friendsGroup.Items.Count > 0)
-                    {
-                        friendsGroup.SafeAction(s => s.SelectedIndex = 0);
-                    }
-                    else
-                    {
-                        friendsList.SafeAction(s => s.Items.Clear());
-                    }
-                }
-            }
+            FriendListManager.RemoveFriendGroup();
         }
 
         private void friendsGroup_SelectedIndexChanged(object sender, EventArgs e)
