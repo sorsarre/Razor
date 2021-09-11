@@ -5827,7 +5827,7 @@ namespace Assistant
                 return;
 
             FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-            friendGroup.AddAllMobileAsFriends();
+            FriendsManager.AddAllMobileAsFriends(friendGroup);
         }
 
         private void onAddAllHumanoidsAsFriends(object sender, System.EventArgs e)
@@ -5839,7 +5839,7 @@ namespace Assistant
                 return;
 
             FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-            friendGroup.AddAllHumanoidsAsFriends();
+            FriendsManager.AddAllHumanoidsAsFriends(friendGroup);
         }
 
         private void friendsList_KeyDown(object sender, System.Windows.Forms.KeyEventArgs e)

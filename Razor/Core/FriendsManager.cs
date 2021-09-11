@@ -75,16 +75,14 @@ namespace Assistant.Core
 
             public void Add(FriendGroup group)
             {
-                var groupName = group.GroupName;
-
                 SafeAction(() =>
                 {
                     HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {group.GroupName}", group.AddFriendToGroup);
                     HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {group.GroupName}", group.ToggleFriendGroup);
                     HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {group.GroupName}",
-                        group.AddAllMobileAsFriends);
+                        () => AddAllMobileAsFriends(group));
                     HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Humanoids: {group.GroupName}",
-                        group.AddAllHumanoidsAsFriends);
+                        () => AddAllHumanoidsAsFriends(group));
                 });
             }
 
@@ -189,38 +187,42 @@ namespace Assistant.Core
 
                 return false;
             }
+        }
 
-            public void AddAllMobileAsFriends()
+        private static bool IsValidFriendTarget(Mobile mobile)
+        {
+            return !IsFriend(mobile.Serial) && mobile.Serial.IsMobile && mobile.Serial != World.Player.Serial;
+        }
+
+        public static void AddAllMobileAsFriends(FriendGroup group)
+        {
+            List<Mobile> mobiles = World.MobilesInRange(12);
+
+            foreach (Mobile mobile in mobiles)
             {
-                List<Mobile> mobiles = World.MobilesInRange(12);
-
-                foreach (Mobile mobile in mobiles)
+                if (IsValidFriendTarget(mobile))
                 {
-                    if (!IsFriend(mobile.Serial) && mobile.Serial.IsMobile && mobile.Serial != World.Player.Serial)
+                    if (group.AddFriend(mobile.Name, mobile.Serial))
                     {
-                        if (AddFriend(mobile.Name, mobile.Serial))
-                        {
-                            mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
-                            mobile.OPLChanged();
-                        }
+                        mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
+                        mobile.OPLChanged();
                     }
                 }
             }
+        }
 
-            public void AddAllHumanoidsAsFriends()
+        public static void AddAllHumanoidsAsFriends(FriendGroup group)
+        {
+            List<Mobile> mobiles = World.MobilesInRange(12);
+
+            foreach (Mobile mobile in mobiles)
             {
-                List<Mobile> mobiles = World.MobilesInRange(12);
-
-                foreach (Mobile mobile in mobiles)
+                if (IsValidFriendTarget(mobile) && mobile.IsHuman)
                 {
-                    if (!IsFriend(mobile.Serial) && mobile.Serial.IsMobile && mobile.Serial != World.Player.Serial &&
-                        mobile.IsHuman)
+                    if (group.AddFriend(mobile.Name, mobile.Serial))
                     {
-                        if (AddFriend(mobile.Name, mobile.Serial))
-                        {
-                            mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
-                            mobile.OPLChanged();
-                        }
+                        mobile.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
+                        mobile.OPLChanged();
                     }
                 }
             }
