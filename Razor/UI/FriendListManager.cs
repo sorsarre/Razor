@@ -14,14 +14,30 @@ namespace Assistant.UI
         private static ComboBox _friendGroups;
         private static ListBox _friendList;
         private static Label _friendFormat;
+        private static CheckBox _friendListEnabled;
+        private static CheckBox _friendOverheadEnabled;
+        private static TextBox _friendOverheadFormat;
+        private static TextBox _targetIndicatorFormat;
         private static Form _dialogOwner;
 
-        public static void SetControls(Form dialogOwner, ComboBox friendGroups, ListBox friendList, Label friendFormat)
+        public static void SetControls(
+            Form dialogOwner,
+            ComboBox friendGroups,
+            ListBox friendList,
+            Label friendFormat,
+            CheckBox friendListEnabled,
+            CheckBox friendOverheadEnabled,
+            TextBox friendOverheadFormat,
+            TextBox targetIndicatorFormat)
         {
             _dialogOwner = dialogOwner;
             _friendGroups = friendGroups;
             _friendList = friendList;
             _friendFormat = friendFormat;
+            _friendListEnabled = friendListEnabled;
+            _friendOverheadEnabled = friendOverheadEnabled;
+            _friendOverheadFormat = friendOverheadFormat;
+            _targetIndicatorFormat = targetIndicatorFormat;
         }
 
         public static void AddFriendGroup()
@@ -40,6 +56,33 @@ namespace Assistant.UI
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        public static void OnFriendGroupSelected()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+
+            _friendListEnabled.SafeAction(s => s.Checked = group.Enabled);
+
+            _friendFormat.SafeAction(s =>
+            {
+                int hueIdx = group.OverheadFormatHue;
+
+                if (hueIdx > 0 && hueIdx < 3000)
+                    s.BackColor = Hues.GetHue(hueIdx - 1).GetColor(HueEntry.TextHueIDX);
+                else
+                    s.BackColor = SystemColors.Control;
+
+                s.ForeColor = (s.BackColor.GetBrightness() < 0.35 ? Color.White : Color.Black);
+            });
+
+            _friendFormat.SafeAction(s => s.Text = group.OverheadFormat);
+            _friendOverheadEnabled.SafeAction(s => s.Checked = group.OverheadFormatEnabled);
+
+            RedrawList(group);
         }
 
         public static void RemoveFriendGroup()

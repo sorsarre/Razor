@@ -73,7 +73,15 @@ namespace Assistant
             Language.LoadControlNames(this);
 
             FriendsManager.SetControls(friendsGroup, friendsList);
-            FriendListManager.SetControls(this, friendsGroup, friendsList, friendFormat);
+            FriendListManager.SetControls(
+                this,
+                friendsGroup,
+                friendsList,
+                friendFormat,
+                friendsListEnabled,
+                showFriendOverhead,
+                friendOverheadFormat,
+                targetIndicatorFormat);
             DressList.SetControls(dressList, dressItems);
             TargetFilterManager.OnItemsChanged += this.RefreshTargetFilters;
             TargetFilterManager.OnAddFriendTarget += this.OnFriendTargetFilterAdd;
@@ -5663,29 +5671,7 @@ namespace Assistant
 
         private void friendsGroup_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            var friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-
-            friendsListEnabled.SafeAction(s => s.Checked = friendGroup.Enabled);
-
-            friendFormat.SafeAction(s =>
-            {
-                int hueIdx = friendGroup.OverheadFormatHue;
-
-                if (hueIdx > 0 && hueIdx < 3000)
-                    s.BackColor = Hues.GetHue(hueIdx - 1).GetColor(HueEntry.TextHueIDX);
-                else
-                    s.BackColor = SystemColors.Control;
-
-                s.ForeColor = (s.BackColor.GetBrightness() < 0.35 ? Color.White : Color.Black);
-            });
-
-            friendOverheadFormat.SafeAction(s => s.Text = friendGroup.OverheadFormat);
-            showFriendOverhead.SafeAction(s => s.Checked = friendGroup.OverheadFormatEnabled);
-
-            FriendsManager.RedrawList(friendGroup);
+            FriendListManager.OnFriendGroupSelected();
         }
 
         private void friendClearList_Click(object sender, EventArgs e)
