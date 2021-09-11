@@ -24,6 +24,24 @@ namespace Assistant.UI
             _friendFormat = friendFormat;
         }
 
+        public static void AddFriendGroup()
+        {
+            if (InputBox.Show(_dialogOwner, "Add Friend Group", "Enter the name of this new Friend Group"))
+            {
+                string name = InputBox.GetString();
+
+                if (!string.IsNullOrEmpty(name) && !FriendsManager.FriendsGroupExists(name))
+                {
+                    FriendsManager.AddFriendGroup(name);
+                }
+                else
+                {
+                    MessageBox.Show(_dialogOwner, "Invalid name, or friends group already exists", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>

@@ -5661,20 +5661,7 @@ namespace Assistant
 
         private void friendsGroupAdd_Click(object sender, EventArgs e)
         {
-            if (InputBox.Show(this, "Add Friend Group", "Enter the name of this new Friend Group"))
-            {
-                string name = InputBox.GetString();
-
-                if (!string.IsNullOrEmpty(name) && !FriendsManager.FriendsGroupExists(name))
-                {
-                    FriendsManager.AddFriendGroup(name);
-                }
-                else
-                {
-                    MessageBox.Show(this, "Invalid name, or friends group already exists", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            FriendListManager.AddFriendGroup();
         }
 
         private void friendsGroupRemove_Click(object sender, EventArgs e)
