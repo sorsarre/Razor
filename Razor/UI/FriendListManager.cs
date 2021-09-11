@@ -227,6 +227,56 @@ namespace Assistant.UI
             FriendsManager.AddAllHumanoidsAsFriends(group);
         }
 
+        public static void ImportFriends()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            try
+            {
+                if (Clipboard.GetText().Contains("!Razor.Friends.Import"))
+                {
+                    List<string> friendsImport = Clipboard.GetText()
+                        .Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+
+                    friendsImport.RemoveAt(0);
+
+                    foreach (string import in friendsImport)
+                    {
+                        if (string.IsNullOrEmpty(import))
+                            continue;
+
+                        string[] friend = import.Split('#');
+
+                        var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+                        group.AddFriend(friend[0], Serial.Parse(friend[1]));
+                    }
+
+                    Clipboard.Clear();
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        public static void ExportFriends()
+        {
+            if (_friendGroups.SelectedIndex < 0 || _friendList.Items.Count == 0)
+                return;
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("!Razor.Friends.Import");
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+
+            foreach (var friend in group.Friends)
+            {
+                sb.AppendLine($"{friend.Name}#{friend.Serial}");
+            }
+
+            Clipboard.SetDataObject(sb.ToString(), true);
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>
