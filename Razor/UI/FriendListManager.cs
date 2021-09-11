@@ -143,6 +143,24 @@ namespace Assistant.UI
             FriendsManager.EnableFriendsGroup(group, enable);
         }
 
+        public static void SetOverheadFormat()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            //FriendOverheadFormat
+            if (string.IsNullOrEmpty(_friendOverheadFormat.Text))
+            {
+                _targetIndicatorFormat.SafeAction(s => s.Text = "[Friend]");
+            }
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            _friendOverheadFormat.SafeAction(s =>
+            {
+                FriendsManager.SetOverheadFormat(group, s.Text);
+            });
+        }
+
         public static void SetOverheadFormatEnabled(bool enable)
         {
             if (_friendGroups.SelectedIndex < 0)

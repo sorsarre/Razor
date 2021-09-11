@@ -5690,17 +5690,7 @@ namespace Assistant
 
         private void friendOverheadFormat_TextChanged(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            //FriendOverheadFormat
-            if (string.IsNullOrEmpty(friendOverheadFormat.Text))
-            {
-                targetIndicatorFormat.SafeAction(s => s.Text = "[Friend]");
-            }
-
-            friendOverheadFormat.SafeAction(s => FriendsManager.SetOverheadFormat((FriendsManager.FriendGroup)friendsGroup.SelectedItem,
-                s.Text));
+            FriendListManager.SetOverheadFormat();
         }
 
         private void setFriendsFormatHue_Click(object sender, EventArgs e)
