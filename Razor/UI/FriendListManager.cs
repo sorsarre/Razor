@@ -110,6 +110,21 @@ namespace Assistant.UI
             }
         }
 
+        public static void AddFriend()
+        {
+            if (World.Player == null)
+                return;
+
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            if (group != null)
+            {
+                FriendsManager.AddFriendToGroup(group);
+            }   
+        }
+
         public static void RemoveFriend()
         {
             if (_friendGroups.SelectedIndex < 0 || _friendList.SelectedIndex < 0)

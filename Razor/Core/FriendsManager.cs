@@ -42,10 +42,12 @@ namespace Assistant.Core
             _friendList = friendsList;
         }
 
-        public static void OnTargetAddFriend(FriendGroup group)
+        public static void AddFriendToGroup(FriendGroup group)
         {
             World.Player.SendMessage(MsgLevel.Friend, LocString.TargFriendAdd);
-            Targeting.OneTimeTarget(group.OnAddFriendTarget);
+            Targeting.OneTimeTarget((location, serial, loc, gfx) => {
+                OnAddFriendTarget(group, location, serial, loc, gfx);
+            });
         }
 
         public class Friend
@@ -77,7 +79,8 @@ namespace Assistant.Core
             {
                 SafeAction(() =>
                 {
-                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {group.GroupName}", group.AddFriendToGroup);
+                    HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add Target To: {group.GroupName}",
+                        () => AddFriendToGroup(group));
                     HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Toggle Group: {group.GroupName}", group.ToggleFriendGroup);
                     HotKey.Add(HKCategory.Friends, HKSubCat.None, $"Add All Mobiles: {group.GroupName}",
                         () => AddAllMobileAsFriends(group));
@@ -113,12 +116,6 @@ namespace Assistant.Core
                 Friends = new List<Friend>();
             }
 
-            public void AddFriendToGroup()
-            {
-                World.Player.SendMessage(MsgLevel.Friend, $"Target friend to add to group '{GroupName}'");
-                Targeting.OneTimeTarget(OnAddFriendTarget);
-            }
-
             public void ToggleFriendGroup()
             {
                 if (Enabled)
@@ -138,29 +135,6 @@ namespace Assistant.Core
             public override string ToString()
             {
                 return $"{GroupName}";
-            }
-
-            public void OnAddFriendTarget(bool location, Serial serial, Point3D loc, ushort gfx)
-            {
-                Engine.MainWindow.SafeAction(s => s.ShowMe());
-
-                if (!location && serial.IsMobile && serial != World.Player.Serial)
-                {
-                    Mobile m = World.FindMobile(serial);
-
-                    if (m == null)
-                        return;
-
-                    if (AddFriend(m.Name, serial))
-                    {
-                        m.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
-                        m.OPLChanged();
-                    }
-                    else
-                    {
-                        World.Player.SendMessage(MsgLevel.Warning, $"'{m.Name}' is already in '{GroupName}'");
-                    }
-                }
             }
 
             public bool AddFriend(string friendName, Serial friendSerial)
@@ -192,6 +166,27 @@ namespace Assistant.Core
         private static bool IsValidFriendTarget(Mobile mobile)
         {
             return !IsFriend(mobile.Serial) && mobile.Serial.IsMobile && mobile.Serial != World.Player.Serial;
+        }
+
+        private static void OnAddFriendTarget(FriendGroup group, bool location, Serial serial, Point3D loc, ushort gfx)
+        {
+            if (!location && serial.IsMobile && serial != World.Player.Serial)
+            {
+                Mobile m = World.FindMobile(serial);
+
+                if (m == null)
+                    return;
+
+                if (group.AddFriend(m.Name, serial))
+                {
+                    m.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
+                    m.OPLChanged();
+                }
+                else
+                {
+                    World.Player.SendMessage(MsgLevel.Warning, $"'{m.Name}' is already in '{group.GroupName}'");
+                }
+            }
         }
 
         public static void AddAllMobileAsFriends(FriendGroup group)

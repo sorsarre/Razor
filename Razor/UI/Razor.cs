@@ -5714,7 +5714,7 @@ namespace Assistant
             }
             else
             {
-                FriendsManager.OnTargetAddFriend((FriendsManager.FriendGroup) friendsGroup.SelectedItem);
+                FriendListManager.AddFriend();
             }
         }
 
@@ -5937,13 +5937,7 @@ namespace Assistant
 
         private void FriendAddTarget_Click(object sender, EventArgs e)
         {
-            if (World.Player == null)
-                return;
-
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            ((FriendsManager.FriendGroup) friendsGroup.SelectedItem).AddFriendToGroup();
+            FriendListManager.AddFriend();
         }
 
         private TreeNode SearchTreeView(string p_sSearchTerm, TreeNodeCollection p_Nodes)
