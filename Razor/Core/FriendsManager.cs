@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows.Forms;
 using System.Xml;
 using Assistant.UI;
 
@@ -30,17 +29,17 @@ namespace Assistant.Core
 {
     public static class FriendsManager
     {
-        private static ComboBox _friendGroups;
-        private static ListBox _friendList;
         private static GroupHotKeyManager _hotkeyManager = new GroupHotKeyManager();
 
         public static List<FriendGroup> FriendGroups = new List<FriendGroup>();
 
-        public static void SetControls(ComboBox friendsGroup, ListBox friendsList)
-        {
-            _friendGroups = friendsGroup;
-            _friendList = friendsList;
-        }
+        public delegate void OnGroupsChangedCallback();
+        public delegate void OnFriendsChangedCallback(FriendGroup group);
+        public delegate void OnFriendTargetCallback();
+
+        public static OnGroupsChangedCallback OnGroupsChanged { get; set; }
+        public static OnFriendsChangedCallback OnFriendsChanged { get; set; }
+        public static OnFriendTargetCallback OnFriendTarget { get; set; }
 
         public static void AddFriendToGroup(FriendGroup group)
         {
@@ -148,12 +147,6 @@ namespace Assistant.Core
                     };
 
                     Friends.Add(newFriend);
-
-                    if (_friendGroups.SelectedItem == this)
-                    {
-                        RedrawList(this);
-                    }
-
                     World.Player?.SendMessage(MsgLevel.Friend, $"Added '{friendName}' to '{GroupName}'");
 
                     return true;
@@ -170,6 +163,8 @@ namespace Assistant.Core
 
         private static void OnAddFriendTarget(FriendGroup group, bool location, Serial serial, Point3D loc, ushort gfx)
         {
+            OnFriendTarget?.Invoke();
+
             if (!location && serial.IsMobile && serial != World.Player.Serial)
             {
                 Mobile m = World.FindMobile(serial);
@@ -181,6 +176,8 @@ namespace Assistant.Core
                 {
                     m.ObjPropList.Add(Language.GetString(LocString.RazorFriend));
                     m.OPLChanged();
+
+                    OnFriendsChanged?.Invoke(group);
                 }
                 else
                 {
@@ -204,6 +201,8 @@ namespace Assistant.Core
                     }
                 }
             }
+
+            OnFriendsChanged?.Invoke(group);
         }
 
         public static void AddAllHumanoidsAsFriends(FriendGroup group)
@@ -221,6 +220,8 @@ namespace Assistant.Core
                     }
                 }
             }
+
+            OnFriendsChanged?.Invoke(group);
         }
 
         public static bool IsFriendOverhead(Serial serial, ref FriendGroup group)
@@ -282,7 +283,7 @@ namespace Assistant.Core
             if (group != null)
             {
                 group.Friends.RemoveAt(index);
-                RedrawList(group);
+                OnFriendsChanged?.Invoke(group);
                 return true;
             }
 
@@ -291,15 +292,14 @@ namespace Assistant.Core
 
         public static bool DeleteFriendGroup(FriendGroup group)
         {
-            foreach (FriendGroup friendGroup in FriendGroups)
+            _hotkeyManager.Remove(group);
+            if (FriendGroups.Remove(group))
             {
-                if (friendGroup == group)
-                {
-                    _hotkeyManager.Remove(friendGroup);
-                }
+                OnGroupsChanged?.Invoke();
+                return true;
             }
 
-            return FriendGroups.Remove(group);
+            return false;
         }
 
         public static void AddFriendGroup(string group)
@@ -315,10 +315,9 @@ namespace Assistant.Core
             };
 
             _hotkeyManager.Add(friendGroup);
-
             FriendGroups.Add(friendGroup);
 
-            RedrawGroup();
+            OnGroupsChanged?.Invoke();
         }
 
         public static void SetOverheadFormat(FriendGroup group, string format)
@@ -437,7 +436,7 @@ namespace Assistant.Core
                     FriendGroups.Add(friendGroup);
                 }
 
-                RedrawAll();
+                OnGroupsChanged?.Invoke();
             }
             catch (Exception ex)
             {
@@ -453,60 +452,6 @@ namespace Assistant.Core
             }
 
             FriendGroups.Clear();
-        }
-
-        private static void RedrawAll()
-        {
-            RedrawGroup();
-
-            if (_friendGroups?.Items.Count > 0)
-            {
-                RedrawList((FriendGroup) _friendGroups.Items[0]);
-            }
-            else
-            {
-                RedrawList(null); // we just want to clear the list
-            }
-        }
-
-        public static void RedrawGroup()
-        {
-            _friendGroups?.SafeAction(s =>
-            {
-                s.BeginUpdate();
-                s.Items.Clear();
-
-                foreach (FriendGroup friendGroup in FriendGroups)
-                {
-                    s.Items.Add(friendGroup);
-                }
-
-                s.EndUpdate();
-
-                if (s.Items.Count > 0)
-                {
-                    s.SelectedIndex = 0;
-                }
-            });
-        }
-
-        public static void RedrawList(FriendGroup group)
-        {
-            _friendList?.SafeAction(s =>
-            {
-                s.BeginUpdate();
-                s.Items.Clear();
-
-                if (group != null)
-                {
-                    foreach (Friend friend in group.Friends)
-                    {
-                        s.Items.Add(friend);
-                    }
-                }
-
-                s.EndUpdate();
-            });
         }
     }
 }

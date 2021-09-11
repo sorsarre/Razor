@@ -38,6 +38,24 @@ namespace Assistant.UI
             _friendOverheadEnabled = friendOverheadEnabled;
             _friendOverheadFormat = friendOverheadFormat;
             _targetIndicatorFormat = targetIndicatorFormat;
+
+            FriendsManager.OnFriendTarget += Engine.MainWindow.ShowMe;
+            FriendsManager.OnGroupsChanged += OnGroupsChanged;
+            FriendsManager.OnFriendsChanged += OnFriendsChanged;
+        }
+
+        private static void OnGroupsChanged()
+        {
+            RedrawAll();
+        }
+
+        private static void OnFriendsChanged(FriendsManager.FriendGroup group)
+        {
+            var currentGroup = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            if (currentGroup == group)
+            {
+                RedrawList(group);
+            }
         }
 
         public static void AddFriendGroup()
@@ -216,6 +234,20 @@ namespace Assistant.UI
 
                 FriendsManager.SetOverheadHue(group, hueIdx);
             });
+        }
+
+        public static void RedrawAll()
+        {
+            RedrawGroups();
+
+            if (_friendGroups?.Items.Count > 0)
+            {
+                RedrawList(_friendGroups.Items[0] as FriendsManager.FriendGroup);
+            }
+            else
+            {
+                RedrawList(null);
+            }
         }
 
         public static void AddAllMobileAsFriends()

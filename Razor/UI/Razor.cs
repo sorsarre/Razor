@@ -72,7 +72,6 @@ namespace Assistant
             new StatsTimer(this).Start();
             Language.LoadControlNames(this);
 
-            FriendsManager.SetControls(friendsGroup, friendsList);
             FriendListManager.SetControls(
                 this,
                 friendsGroup,
