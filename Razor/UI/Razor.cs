@@ -5724,26 +5724,12 @@ namespace Assistant
 
         private void onAddAllMobilesAsFriends(object sender, System.EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (World.Player == null)
-                return;
-
-            FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-            FriendsManager.AddAllMobileAsFriends(friendGroup);
+            FriendListManager.AddAllMobileAsFriends();
         }
 
         private void onAddAllHumanoidsAsFriends(object sender, System.EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0)
-                return;
-
-            if (World.Player == null)
-                return;
-
-            FriendsManager.FriendGroup friendGroup = (FriendsManager.FriendGroup) friendsGroup.SelectedItem;
-            FriendsManager.AddAllHumanoidsAsFriends(friendGroup);
+            FriendListManager.AddAllHumanoidsAsFriends();
         }
 
         private void friendsList_KeyDown(object sender, System.Windows.Forms.KeyEventArgs e)

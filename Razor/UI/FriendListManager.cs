@@ -203,6 +203,30 @@ namespace Assistant.UI
             });
         }
 
+        public static void AddAllMobileAsFriends()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            if (World.Player == null)
+                return;
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            FriendsManager.AddAllMobileAsFriends(group);
+        }
+
+        public static void AddAllHumanoidsAsFriends()
+        {
+            if (_friendGroups.SelectedIndex < 0)
+                return;
+
+            if (World.Player == null)
+                return;
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            FriendsManager.AddAllHumanoidsAsFriends(group);
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>
