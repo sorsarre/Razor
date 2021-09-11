@@ -67,6 +67,15 @@ namespace Assistant.UI
             }
         }
 
+        public static void RemoveFriend()
+        {
+            if (_friendGroups.SelectedIndex < 0 || _friendList.SelectedIndex < 0)
+                return;
+
+            var group = _friendGroups.SelectedItem as FriendsManager.FriendGroup;
+            FriendsManager.RemoveFriend(group, _friendList.SelectedIndex);
+        }
+
         public static void RedrawGroups()
         {
             _friendGroups?.SafeAction(s =>

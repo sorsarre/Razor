@@ -5652,11 +5652,7 @@ namespace Assistant
 
         private void friendRemoveSelected_Click(object sender, EventArgs e)
         {
-            if (friendsGroup.SelectedIndex < 0 || friendsList.SelectedIndex < 0)
-                return;
-
-            FriendsManager.RemoveFriend((FriendsManager.FriendGroup) friendsGroup.SelectedItem,
-                friendsList.SelectedIndex);
+            FriendListManager.RemoveFriend();
         }
 
         private void friendsGroupAdd_Click(object sender, EventArgs e)
@@ -5815,11 +5811,7 @@ namespace Assistant
         {
             if (e.KeyCode == Keys.Delete)
             {
-                if (friendsList.SelectedIndex < 0 || friendsGroup.SelectedIndex < 0)
-                    return;
-
-                FriendsManager.RemoveFriend((FriendsManager.FriendGroup) friendsGroup.SelectedItem,
-                    friendsList.SelectedIndex);
+                FriendListManager.RemoveFriend();
             }
         }
 
