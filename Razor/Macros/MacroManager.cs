@@ -21,9 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows.Forms;
 using Assistant.Scripts;
-using Assistant.UI;
 
 namespace Assistant.Macros
 {
@@ -93,8 +91,16 @@ namespace Assistant.Macros
         //public static bool IsWaiting{ get{ return Playing && m_Current != null && m_Current.Waiting; } }
 
         public delegate void OnMacroTreeUpdatedCallback(IList<MacroNode> nodes);
+        public delegate void OnMacroWaitResetCallback();
+        public delegate void OnMacroPausedCallback();
+        public delegate void OnMacroPlayCallback(Macro m);
+        public delegate void OnMacroStopCallback();
 
         public static OnMacroTreeUpdatedCallback OnMacroTreeUpdated { get; set; }
+        public static OnMacroWaitResetCallback OnMacroWaitReset { get; set; }
+        public static OnMacroPausedCallback OnMacroPaused { get; set; }
+        public static OnMacroPlayCallback OnMacroPlay { get; set; }
+        public static OnMacroStopCallback OnMacroStop { get; set; }
 
         public static void Add(Macro m)
         {
@@ -154,8 +160,7 @@ namespace Assistant.Macros
                 m_Timer.Start();
             }
 
-            if (Engine.MainWindow.WaitDisplay != null)
-                Engine.MainWindow.SafeAction(s => s.WaitDisplay.Text = "");
+            OnMacroWaitReset?.Invoke();
         }
 
         private static void HotKeyPlay(ref object state)
@@ -172,7 +177,7 @@ namespace Assistant.Macros
                 if (!Config.GetBool("DisableMacroPlayFinish"))
                     World.Player.SendMessage(LocString.PlayingA1, m);
 
-                Engine.MainWindow.SafeAction(s => s.PlayMacro(m));
+                OnMacroPlay?.Invoke(m);
             }
         }
 
@@ -205,8 +210,7 @@ namespace Assistant.Macros
                 m_Timer.Start();
             }
 
-            if (Engine.MainWindow.WaitDisplay != null)
-                Engine.MainWindow.SafeAction(s => s.WaitDisplay.Text = "");
+            OnMacroWaitReset?.Invoke();
         }
 
         public static void PlayNext()
@@ -243,10 +247,7 @@ namespace Assistant.Macros
 
             UOAssist.PostMacroStop();
 
-            if (Engine.MainWindow.WaitDisplay != null)
-                Engine.MainWindow.SafeAction(s => s.WaitDisplay.Text = "");
-
-            Engine.MainWindow.SafeAction(s => s.OnMacroStop());
+            OnMacroStop?.Invoke();
 
             //if ( restartPrev )
             //	Play( m_PrevPlay );
@@ -277,8 +278,7 @@ namespace Assistant.Macros
                 // pause
                 m_Timer.Stop();
 
-                if (Engine.MainWindow.WaitDisplay != null)
-                    Engine.MainWindow.SafeAction(s => s.WaitDisplay.Text = "Paused");
+                OnMacroPaused?.Invoke();
 
                 World.Player.SendMessage(LocString.MacroPaused);
 
@@ -304,21 +304,6 @@ namespace Assistant.Macros
             {
                 Text = text;
             }
-        }
-
-        public static void DisplayMacroVariables(ListBox list)
-        {
-            list.BeginUpdate();
-            list.Items.Clear();
-
-            foreach (MacroVariables.MacroVariable at in MacroVariables.MacroVariableList)
-            {
-                list.Items.Add($"${at.Name} ({at.TargetInfo.Serial})");
-            }
-
-            list.EndUpdate();
-            list.Refresh();
-            list.Update();
         }
 
         public static void ReloadMacros()
@@ -379,39 +364,6 @@ namespace Assistant.Macros
             }
 
             return nodes;
-        }
-
-        public static void Select(Macro m, ListBox actionList, Button play, Button rec, CheckBox loop)
-        {
-            if (m == null)
-                return;
-
-            m.DisplayTo(actionList);
-
-            if (Recording)
-            {
-                play.Enabled = false;
-                play.Text = "Play";
-                rec.Enabled = true;
-                rec.Text = "Stop";
-            }
-            else
-            {
-                play.Enabled = true;
-                if (m.Playing)
-                {
-                    play.Text = "Stop";
-                    rec.Enabled = false;
-                }
-                else
-                {
-                    play.Text = "Play";
-                    rec.Enabled = true;
-                }
-
-                rec.Text = "Record";
-                loop.Checked = m.Loop;
-            }
         }
 
         public static bool Action(MacroAction a)

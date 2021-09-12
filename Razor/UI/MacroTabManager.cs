@@ -11,14 +11,99 @@ namespace Assistant.UI
     class MacroTabManager
     {
         private static TreeView _treeView;
+        private static ListBox _variablesList;
 
-        public static void SetControls(TreeView treeView)
+        public static void SetControls(TreeView treeView, ListBox variablesList)
         {
             _treeView = treeView;
+            _variablesList = variablesList;
             MacroManager.OnMacroTreeUpdated += OnMacroTreeUpdated;
+            MacroManager.OnMacroWaitReset += ResetWaitDisplay;
+            MacroManager.OnMacroPaused += OnMacroPaused;
+            MacroManager.OnMacroPlay += OnMacroPlay;
         }
 
-        public static void OnMacroTreeUpdated(IList<MacroManager.MacroNode> nodes)
+        private static void SetWaitDisplay(string text)
+        {
+            Engine.MainWindow.SafeAction(s =>
+            {
+                s.WaitDisplay.Text = text;
+            });
+        }
+
+        private static void ResetWaitDisplay()
+        {
+            SetWaitDisplay(String.Empty);
+        }
+
+        private static void OnMacroPaused()
+        {
+            SetWaitDisplay("Paused");
+        }
+
+        private static void OnMacroPlay(Macro m)
+        {
+            Engine.MainWindow.SafeAction(s => s.PlayMacro(m));
+        }
+
+        private static void OnMacroStop()
+        {
+            ResetWaitDisplay();
+            Engine.MainWindow.SafeAction(s => s.OnMacroStop());
+        }
+
+        public static void Select(Macro m, ListBox actionList, Button play, Button rec, CheckBox loop)
+        {
+            if (m == null)
+                return;
+
+            m.DisplayTo(actionList);
+
+            if (MacroManager.Recording)
+            {
+                play.Enabled = false;
+                play.Text = "Play";
+                rec.Enabled = true;
+                rec.Text = "Stop";
+            }
+            else
+            {
+                play.Enabled = true;
+                if (m.Playing)
+                {
+                    play.Text = "Stop";
+                    rec.Enabled = false;
+                }
+                else
+                {
+                    play.Text = "Play";
+                    rec.Enabled = true;
+                }
+
+                rec.Text = "Record";
+                loop.Checked = m.Loop;
+            }
+        }
+
+        public static void DisplayMacroVariables()
+        {
+            _variablesList.SafeAction(list =>
+            {
+                list.BeginUpdate();
+                list.Items.Clear();
+
+                foreach (MacroVariables.MacroVariable at in MacroVariables.MacroVariableList)
+                {
+                    list.Items.Add($"${at.Name} ({at.TargetInfo.Serial})");
+                }
+
+                list.EndUpdate();
+                list.Refresh();
+                list.Update();
+            });
+        }
+
+        private static void OnMacroTreeUpdated(IList<MacroManager.MacroNode> nodes)
         {
             _treeView.SafeAction(tree =>
             {

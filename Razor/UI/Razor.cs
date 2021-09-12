@@ -82,7 +82,7 @@ namespace Assistant
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
-            MacroTabManager.SetControls(macroTree);
+            MacroTabManager.SetControls(macroTree, macroVariables);
 
             bool st = Config.GetBool("Systray");
             taskbar.Checked = this.ShowInTaskbar = !st;
@@ -2839,7 +2839,7 @@ namespace Assistant
 
             RebuildMacroCache();
 
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
         }
 
         private void RedrawScripts()
@@ -2867,7 +2867,7 @@ namespace Assistant
 
             Macro m = e.Node.Tag as Macro;
             macroActGroup.Visible = m != null;
-            MacroManager.Select(m, actionList, playMacro, recMacro, loopMacro);
+            MacroTabManager.Select(m, actionList, playMacro, recMacro, loopMacro);
 
             LastSelectedMacro = m;
 
@@ -4624,7 +4624,7 @@ namespace Assistant
                     new MacroVariables.MacroVariable(name, t));
 
                 // Save and reload the macros and vars
-                MacroManager.DisplayMacroVariables(macroVariables);
+                MacroTabManager.DisplayMacroVariables();
             }
 
             Engine.MainWindow.ShowMe();
@@ -4645,7 +4645,7 @@ namespace Assistant
             MacroVariables.MacroVariableList[macroVariables.SelectedIndex].TargetInfo = t;
 
             // Save and reload the macros and vars
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
 
             Engine.MainWindow.ShowMe();
         }
@@ -5339,7 +5339,7 @@ namespace Assistant
 
             // Save and reload the macros and vars
             MacroManager.Save();
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
         }
 
         private void macroVariableTypeList_SelectedIndexChanged(object sender, EventArgs e)
@@ -6156,7 +6156,7 @@ namespace Assistant
 
         public void SaveMacroVariables()
         {
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
         }
 
         public void SaveScriptVariables()
