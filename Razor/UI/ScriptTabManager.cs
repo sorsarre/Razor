@@ -64,7 +64,7 @@ namespace Assistant.UI
             EditorManager.UpdateLineNumber(line);
         }
 
-        private static void Recurse(TreeNodeCollection nodes, IList<ScriptManager.ScriptTreeNode> treeNodes)
+        private static void Recurse(TreeNodeCollection nodes, IList<ScriptManager.ScriptNode> treeNodes)
         {
             foreach (var scriptNode in treeNodes)
             {
@@ -79,7 +79,7 @@ namespace Assistant.UI
 
                     nodes.Add(node);
 
-                    if (scriptNode.Tag is string)
+                    if (scriptNode.IsDirectory)
                     {
                         Recurse(node.Nodes, scriptNode.Children);
                     }
@@ -87,7 +87,7 @@ namespace Assistant.UI
             }
         }
 
-        public static void OnScriptsLoaded(IList<ScriptManager.ScriptTreeNode> treeNodes)
+        public static void OnScriptsLoaded(IList<ScriptManager.ScriptNode> treeNodes)
         {
             _scriptTree.SafeAction(s =>
             {
