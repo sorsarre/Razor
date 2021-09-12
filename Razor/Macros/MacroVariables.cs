@@ -89,7 +89,7 @@ namespace Assistant.Macros
                 }
 
                 // Save and reload the macros and vars
-                Engine.MainWindow.SaveMacroVariables();
+                OnItemsChanged?.Invoke();
 
                 TargetWasSet = true;
             }
@@ -103,6 +103,10 @@ namespace Assistant.Macros
         }
 
         public static List<MacroVariable> MacroVariableList = new List<MacroVariable>();
+
+        public delegate void OnItemsChangedCallback();
+
+        public static OnItemsChangedCallback OnItemsChanged { get; set; }
 
         public static void Save(XmlTextWriter xml)
         {

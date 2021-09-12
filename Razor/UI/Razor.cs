@@ -91,6 +91,7 @@ namespace Assistant
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
+            MacroTabManager.SetControls(macroTree, macroVariables, actionList);
 
             bool st = Config.GetBool("Systray");
             taskbar.Checked = this.ShowInTaskbar = !st;
@@ -683,7 +684,7 @@ namespace Assistant
                     OnMacroStop();
 
                 if (MacroManager.Current != null)
-                    MacroManager.Current.DisplayTo(actionList);
+                    MacroTabManager.DisplayMacro(MacroManager.Current);
 
                 macroActGroup.Visible = macroTree.SelectedNode != null;
             }
@@ -2192,7 +2193,7 @@ namespace Assistant
             macroTree.SelectedNode = FindNode(macroTree.Nodes, m);
             macroTree.Update();
             macroTree.Refresh();
-            m.DisplayTo(actionList);
+            MacroTabManager.DisplayMacro(m);
         }
 
         public void PlayMacro(Macro m)
@@ -2572,13 +2573,13 @@ namespace Assistant
         private void RedrawMacros()
         {
             Macro ms = GetMacroSel();
-            MacroManager.DisplayTo(macroTree);
+            MacroManager.ReloadMacros();
             if (ms != null)
                 macroTree.SelectedNode = FindNode(macroTree.Nodes, ms);
 
             RebuildMacroCache();
 
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
         }
 
         private void RedrawScripts()
@@ -2606,7 +2607,7 @@ namespace Assistant
 
             Macro m = e.Node.Tag as Macro;
             macroActGroup.Visible = m != null;
-            MacroManager.Select(m, actionList, playMacro, recMacro, loopMacro);
+            MacroTabManager.Select(m, actionList, playMacro, recMacro, loopMacro);
 
             LastSelectedMacro = m;
 
@@ -3136,7 +3137,7 @@ namespace Assistant
         private void RedrawActionList(Macro m)
         {
             int sel = actionList.SelectedIndex;
-            m.DisplayTo(actionList);
+            MacroTabManager.DisplayMacro(m);
             actionList.SelectedIndex = sel;
         }
 
@@ -4201,7 +4202,7 @@ namespace Assistant
             }
             else
             {
-                MacroManager.DisplayTo(macroTree);
+                MacroManager.ReloadMacros();
             }
 
             //enables redrawing tree after all objects have been added
@@ -4344,7 +4345,7 @@ namespace Assistant
                     new MacroVariables.MacroVariable(name, t));
 
                 // Save and reload the macros and vars
-                MacroManager.DisplayMacroVariables(macroVariables);
+                MacroTabManager.DisplayMacroVariables();
             }
 
             Engine.MainWindow.ShowMe();
@@ -4365,7 +4366,7 @@ namespace Assistant
             MacroVariables.MacroVariableList[macroVariables.SelectedIndex].TargetInfo = t;
 
             // Save and reload the macros and vars
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
 
             Engine.MainWindow.ShowMe();
         }
@@ -5059,7 +5060,7 @@ namespace Assistant
 
             // Save and reload the macros and vars
             MacroManager.Save();
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
         }
 
         private void macroVariableTypeList_SelectedIndexChanged(object sender, EventArgs e)
@@ -5698,7 +5699,7 @@ namespace Assistant
 
         public void SaveMacroVariables()
         {
-            MacroManager.DisplayMacroVariables(macroVariables);
+            MacroTabManager.DisplayMacroVariables();
         }
 
         private void filterDaemonGraphics_CheckedChanged(object sender, EventArgs e)
