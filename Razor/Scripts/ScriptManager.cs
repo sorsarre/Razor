@@ -370,19 +370,27 @@ namespace Assistant.Scripts
             return false;
         }
 
-        public class ScriptTreeNode
+        public class ScriptNode
         {
-            public ScriptTreeNode(string text)
+            public ScriptNode(string text)
             {
                 Text = text;
             }
 
-            public IList<ScriptTreeNode> Children { get; set; }
+            public IList<ScriptNode> Children { get; set; }
             public object Tag { get; set; }
             public string Text { get; set; }
+
+            public bool IsDirectory
+            {
+                get
+                {
+                    return (Tag != null) && (Tag is string);
+                }
+            }
         }
 
-        public delegate void OnScriptsLoadedCallback(IList<ScriptTreeNode> treeNodes);
+        public delegate void OnScriptsLoadedCallback(IList<ScriptNode> treeNodes);
         public static OnScriptsLoadedCallback OnScriptsLoaded { get; set; }
 
         public static void ReloadScripts()
@@ -391,9 +399,9 @@ namespace Assistant.Scripts
             OnScriptsLoaded?.Invoke(nodes);
         }
 
-        private static IList<ScriptTreeNode> ScanDirectory(string path)
+        private static IList<ScriptNode> ScanDirectory(string path)
         {
-            var nodes = new List<ScriptTreeNode>();
+            var nodes = new List<ScriptNode>();
 
             try
             {
@@ -417,7 +425,7 @@ namespace Assistant.Scripts
                         script = AddScript(file);
                     }
 
-                    var node = new ScriptTreeNode(script.Name)
+                    var node = new ScriptNode(script.Name)
                     {
                         Tag = script
                     };
@@ -436,7 +444,7 @@ namespace Assistant.Scripts
                 {
                     if (!string.IsNullOrEmpty(directory) && !directory.Equals(".") && !directory.Equals(".."))
                     {
-                        var node = new ScriptTreeNode($"[{Path.GetFileName(directory)}]")
+                        var node = new ScriptNode($"[{Path.GetFileName(directory)}]")
                         {
                             Tag = directory
                         };
