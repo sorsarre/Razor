@@ -29,6 +29,7 @@ namespace Assistant.UI
             Macro.OnMacroUpdated += OnMacroUpdated;
             Macro.OnMacroCurrentAction += OnMacroCurrentAction;
             Macro.OnMacroActionAdded += OnMacroActionAdded;
+            MacroVariables.OnItemsChanged += DisplayMacroVariables;
         }
 
         private static void SetWaitDisplay(string text)
