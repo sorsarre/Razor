@@ -82,7 +82,7 @@ namespace Assistant
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
-            MacroTabManager.SetControls(macroTree, macroVariables);
+            MacroTabManager.SetControls(macroTree, macroVariables, actionList);
 
             bool st = Config.GetBool("Systray");
             taskbar.Checked = this.ShowInTaskbar = !st;
@@ -699,7 +699,7 @@ namespace Assistant
                     OnMacroStop();
 
                 if (MacroManager.Current != null)
-                    MacroManager.Current.DisplayTo(actionList);
+                    MacroTabManager.DisplayMacro(MacroManager.Current);
 
                 macroActGroup.Visible = macroTree.SelectedNode != null;
             }
@@ -2453,7 +2453,7 @@ namespace Assistant
             macroTree.SelectedNode = FindNode(macroTree.Nodes, m);
             macroTree.Update();
             macroTree.Refresh();
-            m.DisplayTo(actionList);
+            MacroTabManager.DisplayMacro(m);
         }
 
         public void PlayMacro(Macro m)
@@ -3397,7 +3397,7 @@ namespace Assistant
         private void RedrawActionList(Macro m)
         {
             int sel = actionList.SelectedIndex;
-            m.DisplayTo(actionList);
+            MacroTabManager.DisplayMacro(m);
             actionList.SelectedIndex = sel;
         }
 

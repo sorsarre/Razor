@@ -12,17 +12,23 @@ namespace Assistant.UI
     {
         private static TreeView _treeView;
         private static ListBox _variablesList;
+        private static ListBox _actionList;
+        private static Macro _displayedMacro;
 
-        public static void SetControls(TreeView treeView, ListBox variablesList)
+        public static void SetControls(TreeView treeView, ListBox variablesList, ListBox actionList)
         {
             _treeView = treeView;
             _variablesList = variablesList;
+            _actionList = actionList;
             MacroManager.OnMacroTreeUpdated += OnMacroTreeUpdated;
             MacroManager.OnMacroWaitReset += ResetWaitDisplay;
             MacroManager.OnMacroPaused += OnMacroPaused;
             MacroManager.OnMacroPlay += OnMacroPlay;
             MacroManager.OnMacroStop += OnMacroStop;
             MacroManager.OnMacroWaitUpdate += SetWaitDisplay;
+            Macro.OnMacroUpdated += OnMacroUpdated;
+            Macro.OnMacroCurrentAction += OnMacroCurrentAction;
+            Macro.OnMacroActionAdded += OnMacroActionAdded;
         }
 
         private static void SetWaitDisplay(string text)
@@ -54,12 +60,88 @@ namespace Assistant.UI
             Engine.MainWindow.SafeAction(s => s.OnMacroStop());
         }
 
+        private static void OnMacroActionAdded(Macro m, int at, MacroAction action)
+        {
+            if (m != _displayedMacro)
+            {
+                return;
+            }
+
+            _actionList.SafeAction(s =>
+            {
+                s.Items.Insert(at, action);
+            });
+        }
+
+        private static void OnMacroCurrentAction(Macro m, int index)
+        {
+            if (m != _displayedMacro)
+            {
+                return;
+            }
+
+            _actionList.SafeAction(s =>
+            {
+                if (index >= 0 && index < s.Items.Count)
+                {
+                    s.SelectedIndex = index;
+                }
+                else
+                {
+                    s.SelectedIndex = -1;
+                }
+            });
+            
+        }
+
+        public static void DisplayMacro(Macro m)
+        {
+            _displayedMacro = m;
+            _actionList.SafeAction(s => s.Items.Clear());
+
+            if (!m.Loaded)
+                m.Load();
+
+            _actionList.SafeAction(s =>
+            {
+                s.BeginUpdate();
+                if (m.Actions.Count > 0)
+                    s.Items.AddRange((object[])m.Actions.ToArray(typeof(object)));
+                if (m.Playing && m.CurrentAction >= 0 && m.CurrentAction < m.Actions.Count)
+                    s.SelectedIndex = m.CurrentAction;
+                else
+                    s.SelectedIndex = -1;
+                s.EndUpdate();
+            });
+        }
+
+        public static void OnMacroUpdated(Macro m)
+        {
+            if (m != _displayedMacro)
+            {
+                return;
+            }
+
+            _actionList.SafeAction(list =>
+            {
+                var index = list.SelectedIndex;
+                DisplayMacro(m);
+                try
+                {
+                    list.SelectedIndex = index;
+                }
+                catch
+                {
+                }
+            });
+        }
+
         public static void Select(Macro m, ListBox actionList, Button play, Button rec, CheckBox loop)
         {
             if (m == null)
                 return;
 
-            m.DisplayTo(actionList);
+            DisplayMacro(m);
 
             if (MacroManager.Recording)
             {

@@ -20,11 +20,10 @@
 
 using System;
 using System.Collections;
-using System.Windows.Forms;
 using System.Reflection;
 using System.IO;
 using System.Text;
-using Assistant.UI;
+
 
 namespace Assistant.Macros
 {
@@ -37,8 +36,15 @@ namespace Assistant.Macros
         private int m_CurrentAction;
         private bool m_Loop;
         private bool m_Loaded;
-        private ListBox m_ListBox;
         private Stack m_IfStatus;
+
+        public delegate void OnMacroUpdatedCallback(Macro m);
+        public delegate void OnMacroCurrentActionCallback(Macro m, int index);
+        public delegate void OnMacroActionAddedCallback(Macro m, int at, MacroAction action);
+
+        public static OnMacroUpdatedCallback OnMacroUpdated { get; set; }
+        public static OnMacroCurrentActionCallback OnMacroCurrentAction { get; set; }
+        public static OnMacroActionAddedCallback OnMacroActionAdded { get; set; }
 
         public Macro(string path)
         {
@@ -81,6 +87,8 @@ namespace Assistant.Macros
             get { return m_Wait != null; }
         }
 
+        public bool Loaded => m_Loaded;
+
         public int CurrentAction
         {
             get { return m_CurrentAction; }
@@ -90,28 +98,6 @@ namespace Assistant.Macros
         {
             get { return m_Loop && Client.Instance.AllowBit(FeatureBit.LoopingMacros); }
             set { m_Loop = value; }
-        }
-
-        public void DisplayTo(ListBox list)
-        {
-            m_ListBox = list;
-
-            m_ListBox.SafeAction(s => s.Items.Clear());
-
-            if (!m_Loaded)
-                Load();
-
-            m_ListBox.SafeAction(s =>
-            {
-                s.BeginUpdate();
-                if (m_Actions.Count > 0)
-                    s.Items.AddRange((object[]) m_Actions.ToArray(typeof(object)));
-                if (m_Playing && m_CurrentAction >= 0 && m_CurrentAction < m_Actions.Count)
-                    s.SelectedIndex = m_CurrentAction;
-                else
-                    s.SelectedIndex = -1;
-                s.EndUpdate();
-            });
         }
 
         public override string ToString()
@@ -134,9 +120,8 @@ namespace Assistant.Macros
         public void Record()
         {
             m_Actions.Clear();
-            if (m_ListBox != null)
-                m_ListBox.SafeAction(s => s.Items.Clear());
             RecordAt(0);
+            OnMacroUpdated?.Invoke(this);
         }
 
         public void RecordAt(int at)
@@ -162,8 +147,7 @@ namespace Assistant.Macros
                 m_IfStatus.Clear();
                 m_Playing = true;
                 m_CurrentAction = -1;
-                if (m_ListBox != null)
-                    m_ListBox.SafeAction(s => s.SelectedIndex = -1);
+                OnMacroCurrentAction?.Invoke(this, m_CurrentAction);
             }
         }
 
@@ -218,8 +202,7 @@ namespace Assistant.Macros
             {
                 action.Parent = this;
                 m_Actions.Insert(m_CurrentAction, action);
-                if (m_ListBox != null)
-                    m_ListBox.SafeAction(s => s.Items.Insert(m_CurrentAction, action));
+                OnMacroActionAdded?.Invoke(this, m_CurrentAction, action);
                 m_CurrentAction++;
 
                 return false;
@@ -364,18 +347,7 @@ namespace Assistant.Macros
 
         public void Update()
         {
-            if (m_ListBox != null)
-            {
-                int sel = m_ListBox.SelectedIndex;
-                DisplayTo(m_ListBox);
-                try
-                {
-                    m_ListBox.SafeAction(s => s.SelectedIndex = sel);
-                }
-                catch
-                {
-                }
-            }
+            OnMacroUpdated?.Invoke(this);
         }
 
         private bool NextIsInstantWait()
@@ -461,13 +433,7 @@ namespace Assistant.Macros
 
                 m_CurrentAction++;
                 //MacroManager.ActionUpdate( this, m_CurrentAction );
-                if (m_ListBox != null)
-                {
-                    if (m_CurrentAction < m_ListBox.Items.Count)
-                        m_ListBox.SafeAction(s => s.SelectedIndex = m_CurrentAction);
-                    else
-                        m_ListBox.SafeAction(s => s.SelectedIndex = -1);
-                }
+                OnMacroCurrentAction?.Invoke(this, m_CurrentAction);
 
                 if (m_CurrentAction >= 0 && m_CurrentAction < m_Actions.Count)
                 {
