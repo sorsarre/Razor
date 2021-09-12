@@ -430,7 +430,7 @@ namespace Assistant.Macros
                         }
                         else
                         {
-                            if (waitLen >= TimeSpan.FromSeconds(4.0) && Engine.MainWindow.WaitDisplay != null)
+                            if (waitLen >= TimeSpan.FromSeconds(4.0))
                             {
                                 StringBuilder sb = new StringBuilder(Language.GetString(LocString.WaitingTimeout));
 
@@ -451,8 +451,7 @@ namespace Assistant.Macros
                                 }
 
                                 sb.AppendFormat("{0:00}:{1:00}", m, s);
-
-                                Engine.MainWindow.WaitDisplay.SafeAction(w => w.Text = sb.ToString());
+                                MacroManager.OnMacroWaitUpdate?.Invoke(sb.ToString());
                             }
 
                             return true; // keep waiting

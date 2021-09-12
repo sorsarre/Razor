@@ -21,6 +21,8 @@ namespace Assistant.UI
             MacroManager.OnMacroWaitReset += ResetWaitDisplay;
             MacroManager.OnMacroPaused += OnMacroPaused;
             MacroManager.OnMacroPlay += OnMacroPlay;
+            MacroManager.OnMacroStop += OnMacroStop;
+            MacroManager.OnMacroWaitUpdate += SetWaitDisplay;
         }
 
         private static void SetWaitDisplay(string text)

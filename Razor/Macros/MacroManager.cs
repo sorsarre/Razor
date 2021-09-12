@@ -92,6 +92,7 @@ namespace Assistant.Macros
 
         public delegate void OnMacroTreeUpdatedCallback(IList<MacroNode> nodes);
         public delegate void OnMacroWaitResetCallback();
+        public delegate void OnMacroWaitUpdateCallback(string text);
         public delegate void OnMacroPausedCallback();
         public delegate void OnMacroPlayCallback(Macro m);
         public delegate void OnMacroStopCallback();
@@ -101,6 +102,8 @@ namespace Assistant.Macros
         public static OnMacroPausedCallback OnMacroPaused { get; set; }
         public static OnMacroPlayCallback OnMacroPlay { get; set; }
         public static OnMacroStopCallback OnMacroStop { get; set; }
+
+        public static OnMacroWaitUpdateCallback OnMacroWaitUpdate { get; set; }
 
         public static void Add(Macro m)
         {
