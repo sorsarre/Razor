@@ -407,8 +407,7 @@ namespace Assistant.Macros
                     {
                         if (Loop)
                         {
-                            if (Engine.MainWindow.WaitDisplay != null)
-                                Engine.MainWindow.WaitDisplay.SafeAction(s => s.Text = string.Empty);
+                            MacroManager.OnMacroWaitReset?.Invoke();
                             m_CurrentAction = -1;
                             m_IfStatus.Clear();
                             PauseB4Loop.Perform();
@@ -427,8 +426,7 @@ namespace Assistant.Macros
                         if (!m_Wait.PerformWait())
                         {
                             m_Wait = null; // done waiting
-                            if (Engine.MainWindow.WaitDisplay != null)
-                                Engine.MainWindow.WaitDisplay.SafeAction(s => s.Text = string.Empty);
+                            MacroManager.OnMacroWaitReset?.Invoke();
                         }
                         else
                         {
@@ -692,8 +690,7 @@ namespace Assistant.Macros
                 }
                 else
                 {
-                    if (Engine.MainWindow.WaitDisplay != null)
-                        Engine.MainWindow.WaitDisplay.SafeAction(s => s.Text = string.Empty);
+                    MacroManager.OnMacroWaitReset?.Invoke();
 
                     if (Loop)
                     {
