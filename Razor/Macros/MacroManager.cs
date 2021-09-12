@@ -39,8 +39,7 @@ namespace Assistant.Macros
             HotKey.Add(HKCategory.Macros, LocString.StopCurrent, new HotKeyCallback(HotKeyStop));
             HotKey.Add(HKCategory.Macros, LocString.PauseCurrent, new HotKeyCallback(HotKeyPause));
 
-            string path = Config.GetUserDirectory("Macros");
-            Recurse(null, path);
+            ReloadMacros();
         }
 
         static MacroManager()
@@ -92,6 +91,10 @@ namespace Assistant.Macros
             get { return Recording || (Playing && m_Current.Waiting); }
         }
         //public static bool IsWaiting{ get{ return Playing && m_Current != null && m_Current.Waiting; } }
+
+        public delegate void OnMacroTreeUpdatedCallback(IList<MacroNode> nodes);
+
+        public static OnMacroTreeUpdatedCallback OnMacroTreeUpdated { get; set; }
 
         public static void Add(Macro m)
         {
@@ -283,14 +286,24 @@ namespace Assistant.Macros
             }
         }
 
-        public static void DisplayTo(TreeView tree)
+        public class MacroNode
         {
-            tree.BeginUpdate();
-            tree.Nodes.Clear();
-            Recurse(tree.Nodes, Config.GetUserDirectory("Macros"));
-            tree.EndUpdate();
-            tree.Refresh();
-            tree.Update();
+            public IList<MacroNode> Children { get; set; }
+            public string Text { get; set; }
+            public object Tag { get; set; }
+
+            public bool IsDirectory
+            {
+                get
+                {
+                    return (Tag != null) && (Tag is string);
+                }
+            }
+
+            public MacroNode(string text)
+            {
+                Text = text;
+            }
         }
 
         public static void DisplayMacroVariables(ListBox list)
@@ -308,8 +321,16 @@ namespace Assistant.Macros
             list.Update();
         }
 
-        private static void Recurse(TreeNodeCollection nodes, string path)
+        public static void ReloadMacros()
         {
+            var nodes = Recurse(Config.GetUserDirectory("Macros"));
+            OnMacroTreeUpdated?.Invoke(nodes);
+        }
+
+        private static IList<MacroNode> Recurse(string path)
+        {
+            var nodes = new List<MacroNode>();
+
             try
             {
                 string[] macros = Directory.GetFiles(path, "*.macro");
@@ -330,12 +351,9 @@ namespace Assistant.Macros
                     if (m == null)
                         Add(m = new Macro(macros[i]));
 
-                    if (nodes != null)
-                    {
-                        TreeNode node = new TreeNode(Path.GetFileNameWithoutExtension(m.Filename));
-                        node.Tag = m;
-                        nodes.Add(node);
-                    }
+                    var node = new MacroNode(Path.GetFileNameWithoutExtension(m.Filename));
+                    node.Tag = m;
+                    nodes.Add(node);
                 }
             }
             catch
@@ -349,23 +367,18 @@ namespace Assistant.Macros
                 {
                     if (dirs[i] != "" && dirs[i] != "." && dirs[i] != "..")
                     {
-                        if (nodes != null)
-                        {
-                            TreeNode node = new TreeNode($"[{Path.GetFileName(dirs[i])}]");
-                            node.Tag = dirs[i];
-                            nodes.Add(node);
-                            Recurse(node.Nodes, dirs[i]);
-                        }
-                        else
-                        {
-                            Recurse(null, dirs[i]);
-                        }
+                        var node = new MacroNode($"[{Path.GetFileName(dirs[i])}]");
+                        node.Tag = dirs[i];
+                        nodes.Add(node);
+                        node.Children = Recurse(dirs[i]);
                     }
                 }
             }
             catch
             {
             }
+
+            return nodes;
         }
 
         public static void Select(Macro m, ListBox actionList, Button play, Button rec, CheckBox loop)

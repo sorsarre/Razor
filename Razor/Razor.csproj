@@ -412,6 +412,7 @@
     <Compile Include="UI\MacroInsertWait.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="UI\MacroTabManager.cs" />
     <Compile Include="UI\MessageDialog.cs">
       <SubType>Form</SubType>
     </Compile>

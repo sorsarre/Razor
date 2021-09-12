@@ -82,6 +82,7 @@ namespace Assistant
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
+            MacroTabManager.SetControls(macroTree);
 
             bool st = Config.GetBool("Systray");
             taskbar.Checked = this.ShowInTaskbar = !st;
@@ -2832,7 +2833,7 @@ namespace Assistant
         private void RedrawMacros()
         {
             Macro ms = GetMacroSel();
-            MacroManager.DisplayTo(macroTree);
+            MacroManager.ReloadMacros();
             if (ms != null)
                 macroTree.SelectedNode = FindNode(macroTree.Nodes, ms);
 
@@ -4480,7 +4481,7 @@ namespace Assistant
             }
             else
             {
-                MacroManager.DisplayTo(macroTree);
+                MacroManager.ReloadMacros();
             }
 
             //enables redrawing tree after all objects have been added
