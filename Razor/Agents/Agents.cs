@@ -101,56 +101,6 @@ namespace Assistant.Agents
             }
         }
 
-        public static void Redraw(ComboBox list, GroupBox gb, params Button[] buttons)
-        {
-            list.Visible = true;
-            list.BeginUpdate();
-            list.Items.Clear();
-            list.SelectedIndex = -1;
-
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                buttons[i].Visible = false;
-            }
-
-            for (int i = 0; i < List.Count; i++)
-            {
-                list.Items.Add(List[i]);
-            }
-
-            list.EndUpdate();
-
-            gb.Visible = false;
-        }
-
-        public static void Select(int idx, ComboBox agents, ListBox subList, GroupBox grp, params Button[] buttons)
-        {
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                buttons[i].Visible = false;
-                buttons[i].Text = "";
-                Engine.MainWindow.SafeAction(s => s.UnlockControl(buttons[i]));
-            }
-
-            grp.Visible = false;
-            subList.Visible = false;
-            Engine.MainWindow.SafeAction(s => s.UnlockControl(subList));
-
-            Agent a = null;
-            if (idx >= 0 && idx < List.Count)
-            {
-                a = List[idx] as Agent;
-            }
-
-            if (a != null)
-            {
-                grp.Visible = true;
-                subList.Visible = true;
-                grp.Text = a.Name;
-                a.OnSelected(subList, buttons);
-            }
-        }
-
         public override string ToString()
         {
             return Name;

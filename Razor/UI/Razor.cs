@@ -36,6 +36,7 @@ using Assistant.Agents;
 using Assistant.Core;
 using Assistant.Scripts;
 using Assistant.UI;
+using Assistant.UI.Agents;
 using Ultima;
 using ContainerLabels = Assistant.UI.ContainerLabels;
 using Exception = System.Exception;
@@ -82,6 +83,16 @@ namespace Assistant
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
+            AgentManager.SetControls(
+                agentList,
+                agentGroup,
+                agentSubList,
+                agentB1,
+                agentB2,
+                agentB3,
+                agentB4,
+                agentB5,
+                agentB6);
 
             bool st = Config.GetBool("Systray");
             taskbar.Checked = this.ShowInTaskbar = !st;
@@ -679,10 +690,7 @@ namespace Assistant
             }
             else if (tabs.SelectedTab == agentsTab)
             {
-                int sel = agentList.SelectedIndex;
-                Agent.Redraw(agentList, agentGroup, agentB1, agentB2, agentB3, agentB4, agentB5, agentB6);
-                if (sel >= 0 && sel < agentList.Items.Count)
-                    agentList.SelectedIndex = sel;
+                AgentManager.Redraw();
             }
             else if (tabs.SelectedTab == advancedTab)
             {
@@ -2045,9 +2053,7 @@ namespace Assistant
         {
             try
             {
-                Agent.Select(agentList.SelectedIndex, agentList, agentSubList, agentGroup, agentB1, agentB2, agentB3,
-                    agentB4, agentB5, agentB6);
-
+                AgentManager.OnAgentSelected();
                 agentSetHotKey.Visible = true;
             }
             catch
