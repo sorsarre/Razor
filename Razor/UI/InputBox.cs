@@ -45,6 +45,11 @@ namespace Assistant
             return Show(null, prompt, title, def);
         }
 
+        public static bool Show(LocString prompt, LocString title, string def)
+        {
+            return Show(null, Language.GetString(prompt), Language.GetString(title), def);
+        }
+
         public static bool Show(Form parent, string prompt)
         {
             return Show(parent, prompt, Language.GetString(LocString.InputReq), "");

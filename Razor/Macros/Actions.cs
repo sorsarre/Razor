@@ -22,32 +22,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System.Windows.Forms;
 using Assistant.Core;
-using Assistant.UI;
 
 namespace Assistant.Macros
 {
-    public delegate void MacroMenuCallback(object[] Args);
-
-    public class MacroMenuItem : ToolStripMenuItem
-    {
-        private MacroMenuCallback m_Call;
-        private object[] m_Args;
-
-        public MacroMenuItem(LocString name, MacroMenuCallback call, params object[] args) : base(
-            Language.GetString(name))
-        {
-            base.Click += new EventHandler(OnMenuClick);
-            m_Call = call;
-            m_Args = args;
-        }
-
-        private void OnMenuClick(object sender, System.EventArgs e)
-        {
-            m_Call(m_Args);
-        }
-    }
 
     public abstract class MacroAction
     {
@@ -77,11 +55,6 @@ namespace Assistant.Macros
             return sb.ToString();
         }
 
-        public virtual ToolStripMenuItem[] GetContextMenuItems()
-        {
-            return null;
-        }
-
         public Macro Parent
         {
             get { return m_Parent; }
@@ -95,7 +68,6 @@ namespace Assistant.Macros
     {
         protected TimeSpan m_Timeout = TimeSpan.FromMinutes(5);
         private DateTime m_Start;
-        private MacroMenuItem m_MenuItem = null;
 
         public MacroWaitAction()
         {
@@ -106,29 +78,13 @@ namespace Assistant.Macros
         public TimeSpan Timeout
         {
             get { return m_Timeout; }
+            set { m_Timeout = value; }
         }
 
         public DateTime StartTime
         {
             get { return m_Start; }
             set { m_Start = value; }
-        }
-
-        public MacroMenuItem EditTimeoutMenuItem
-        {
-            get
-            {
-                if (m_MenuItem == null)
-                    m_MenuItem = new MacroMenuItem(LocString.EditTimeout, new MacroMenuCallback(EditTimeout));
-                return m_MenuItem;
-            }
-        }
-
-        private void EditTimeout(object[] args)
-        {
-            if (InputBox.Show(Language.GetString(LocString.NewTimeout), Language.GetString(LocString.ChangeTimeout),
-                ((int) (m_Timeout.TotalSeconds)).ToString()))
-                m_Timeout = TimeSpan.FromSeconds(InputBox.GetInt(60));
         }
 
         public virtual bool CheckMatch(MacroAction a)
@@ -143,10 +99,7 @@ namespace Assistant.Macros
 
         public MacroComment(string comment)
         {
-            if (comment == null)
-                comment = "";
-
-            m_Comment = comment.Trim();
+            m_Comment = comment?.Trim() ?? "";
         }
 
         public override bool Perform()
@@ -167,48 +120,15 @@ namespace Assistant.Macros
         public string Comment
         {
             get { return m_Comment; }
-            set { m_Comment = value; }
+            set {
+                m_Comment = value ?? "";
+                m_Parent?.Update();
+            }
         }
 
         public override string ToString()
         {
-            if (m_Comment == null)
-                m_Comment = "";
-
             return $"// {m_Comment}";
-        }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            if (InputBox.Show(Language.GetString(LocString.InsComment), Language.GetString(LocString.InputReq),
-                m_Comment))
-            {
-                if (m_Comment == null)
-                    m_Comment = "";
-
-                m_Comment = InputBox.GetString();
-
-                if (m_Comment == null)
-                    m_Comment = "";
-
-                if (m_Parent != null)
-                    m_Parent.Update();
-            }
         }
     }
 
@@ -280,31 +200,15 @@ namespace Assistant.Macros
             return Language.Format(LocString.DClickA1, m_Serial);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.ReTarget, new MacroMenuCallback(ReTarget)),
-                    new MacroMenuItem(LocString.Conv2DCT, new MacroMenuCallback(ConvertToByType))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ConvertToByType(object[] args)
+        public void ConvertToByType()
         {
             if (m_Gfx != 0 && m_Serial.IsItem && m_Parent != null)
                 m_Parent.Convert(this, new DoubleClickTypeAction(m_Gfx, m_Serial.IsItem));
         }
 
-        private void ReTarget(object[] args)
+        public void ReTarget(Targeting.TargetResponseCallback cb)
         {
-            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnReTarget));
+            Targeting.OneTimeTarget(OnReTarget + cb);
             World.Player.SendMessage(MsgLevel.Force, LocString.SelTargAct);
         }
 
@@ -316,10 +220,7 @@ namespace Assistant.Macros
                 m_Gfx = gfx;
             }
 
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
-
-            if (m_Parent != null)
-                m_Parent.Update();
+            m_Parent?.Update();
         }
     }
 
@@ -452,24 +353,9 @@ namespace Assistant.Macros
                 m_Item ? ((ItemID) m_Gfx).ToString() : $"(Character) 0x{m_Gfx:X}");
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public void ReTarget(Targeting.TargetResponseCallback cb)
         {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.ReTarget, new MacroMenuCallback(ReTarget))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ReTarget(object[] args)
-        {
-            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnReTarget));
+            Targeting.OneTimeTarget(OnReTarget + cb);
             World.Player.SendMessage(LocString.SelTargAct);
         }
 
@@ -477,10 +363,7 @@ namespace Assistant.Macros
         {
             m_Gfx = gfx;
             m_Item = serial.IsItem;
-
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
-            if (m_Parent != null)
-                m_Parent.Update();
+            m_Parent?.Update();
         }
     }
 
@@ -551,26 +434,9 @@ namespace Assistant.Macros
             return Language.Format(LocString.LiftA10, m_Serial, m_Amount);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public void ReTarget(Targeting.TargetResponseCallback cb)
         {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.ReTarget, new MacroMenuCallback(ReTarget)),
-                    new MacroMenuItem(LocString.ConvLiftByType, new MacroMenuCallback(ConvertToByType)),
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(EditAmount))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ReTarget(object[] args)
-        {
-            Targeting.OneTimeTarget(!m_Serial.IsValid, new Targeting.TargetResponseCallback(ReTargetResponse));
+            Targeting.OneTimeTarget(!m_Serial.IsValid, ReTargetResponse+cb);
             World.Player.SendMessage(MsgLevel.Force, LocString.SelTargAct);
         }
 
@@ -578,25 +444,20 @@ namespace Assistant.Macros
         {
             m_Serial = serial;
             m_Gfx = gfx;
-
-            Engine.MainWindow.ShowMe();
-
             m_Parent?.Update();
         }
 
-        private void EditAmount(object[] args)
+        public ushort Amount
         {
-            if (InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                Language.GetString(LocString.InputReq), m_Amount.ToString()))
+            get { return m_Amount; }
+            set
             {
-                m_Amount = (ushort) InputBox.GetInt(m_Amount);
-
-                if (m_Parent != null)
-                    m_Parent.Update();
+                m_Amount = value;
+                m_Parent?.Update();
             }
         }
 
-        private void ConvertToByType(object[] args)
+        public void ConvertToByType()
         {
             if (m_Gfx != 0 && m_Parent != null)
                 m_Parent.Convert(this, new LiftTypeAction(m_Gfx, m_Amount));
@@ -673,46 +534,25 @@ namespace Assistant.Macros
             return DoSerialize(m_Gfx, m_Amount);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public void ReTarget(Targeting.TargetResponseCallback cb)
         {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.ReTarget, new MacroMenuCallback(ReTarget)),
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(EditAmount))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ReTarget(object[] args)
-        {
-            Targeting.OneTimeTarget(false, new Targeting.TargetResponseCallback(ReTargetResponse));
+            Targeting.OneTimeTarget(false, ReTargetResponse + cb);
             World.Player.SendMessage(MsgLevel.Force, LocString.SelTargAct);
         }
 
         private void ReTargetResponse(bool ground, Serial serial, Point3D pt, ushort gfx)
         {
             m_Gfx = gfx;
-
-            Engine.MainWindow.ShowMe();
-
             m_Parent?.Update();
         }
 
-        private void EditAmount(object[] args)
+        public ushort Amount
         {
-            if (InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                Language.GetString(LocString.InputReq), m_Amount.ToString()))
+            get { return m_Amount; }
+            set
             {
-                m_Amount = (ushort) InputBox.GetInt(m_Amount);
-
-                if (m_Parent != null)
-                    m_Parent.Update();
+                m_Amount = value;
+                m_Parent?.Update();
             }
         }
 
@@ -799,29 +639,12 @@ namespace Assistant.Macros
                 return Language.Format(LocString.DropA2, m_To.IsValid ? m_To.ToString() : "Ground", m_At);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public bool IsDestinationValid
         {
-            if (m_To.IsValid)
-            {
-                return null; // Dont allow conversion(s)
-            }
-            else
-            {
-                if (m_MenuItems == null)
-                {
-                    m_MenuItems = new MacroMenuItem[]
-                    {
-                        new MacroMenuItem(LocString.ConvRelLoc, new MacroMenuCallback(ConvertToRelLoc))
-                    };
-                }
-
-                return m_MenuItems;
-            }
+            get { return m_To.IsValid; }
         }
 
-        private void ConvertToRelLoc(object[] args)
+        public void ConvertToRelLoc()
         {
             if (!m_To.IsValid && m_Parent != null)
                 m_Parent.Convert(this,
@@ -939,29 +762,17 @@ namespace Assistant.Macros
                 return Language.Format(LocString.CloseGump);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public int ButtonID
         {
-            if (this.m_MenuItems == null)
-                this.m_MenuItems = (ToolStripMenuItem[]) new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.UseLastGumpResponse, new MacroMenuCallback(this.UseLastResponse),
-                        new object[0]),
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(this.Edit), new object[0])
-                };
-            return this.m_MenuItems;
+            get { return m_ButtonID; }
+            set
+            {
+                m_ButtonID = value;
+                m_Parent?.Update();
+            }
         }
 
-        private void Edit(object[] args)
-        {
-            if (InputBox.Show(Language.GetString(LocString.EnterNewText), "Input Box", this.m_ButtonID.ToString()))
-                this.m_ButtonID = InputBox.GetInt();
-
-            Parent?.Update();
-        }
-
-        private void UseLastResponse(object[] args)
+        public void UseLastResponse()
         {
             m_ButtonID = World.Player.LastGumpResponseAction.m_ButtonID;
             m_Switches = World.Player.LastGumpResponseAction.m_Switches;
@@ -1066,27 +877,9 @@ namespace Assistant.Macros
             return Language.GetString(LocString.AbsTarg);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public void ReTarget(Targeting.TargetResponseCallback cb)
         {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.ReTarget, new MacroMenuCallback(ReTarget)),
-                    new MacroMenuItem(LocString.ConvLT, new MacroMenuCallback(ConvertToLastTarget)),
-                    new MacroMenuItem(LocString.ConvTargType, new MacroMenuCallback(ConvertToByType)),
-                    new MacroMenuItem(LocString.ConvRelLoc, new MacroMenuCallback(ConvertToRelLoc))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ReTarget(object[] args)
-        {
-            Targeting.OneTimeTarget(!m_Info.Serial.IsValid, new Targeting.TargetResponseCallback(ReTargetResponse));
+            Targeting.OneTimeTarget(!m_Info.Serial.IsValid, ReTargetResponse + cb);
             World.Player.SendMessage(MsgLevel.Force, LocString.SelTargAct);
         }
 
@@ -1099,24 +892,22 @@ namespace Assistant.Macros
             m_Info.Y = pt.Y;
             m_Info.Z = pt.Z;
 
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
-            if (m_Parent != null)
-                m_Parent.Update();
+            m_Parent?.Update();
         }
 
-        private void ConvertToLastTarget(object[] args)
+        public void ConvertToLastTarget()
         {
             if (m_Parent != null)
                 m_Parent.Convert(this, new LastTargetAction());
         }
 
-        private void ConvertToByType(object[] args)
+        public void ConvertToByType()
         {
             if (m_Parent != null)
                 m_Parent.Convert(this, new TargetTypeAction(m_Info.Serial.IsMobile, m_Info.Gfx));
         }
 
-        private void ConvertToRelLoc(object[] args)
+        public void ConvertToRelLoc()
         {
             if (m_Parent != null)
                 m_Parent.Convert(this,
@@ -1382,25 +1173,9 @@ namespace Assistant.Macros
                 return Language.Format(LocString.TargByType, (ItemID) m_Gfx);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public void ReTarget(Targeting.TargetResponseCallback cb)
         {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.ReTarget, new MacroMenuCallback(ReTarget)),
-                    new MacroMenuItem(LocString.ConvLT, new MacroMenuCallback(ConvertToLastTarget))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ReTarget(object[] args)
-        {
-            Targeting.OneTimeTarget(false, new Targeting.TargetResponseCallback(ReTargetResponse));
+            Targeting.OneTimeTarget(false, ReTargetResponse + cb);
             World.Player.SendMessage(MsgLevel.Force, LocString.SelTargAct);
         }
 
@@ -1412,12 +1187,10 @@ namespace Assistant.Macros
                 m_Gfx = gfx;
             }
 
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
-            if (m_Parent != null)
-                m_Parent.Update();
+            m_Parent?.Update();
         }
 
-        private void ConvertToLastTarget(object[] args)
+        public void ConvertToLastTarget()
         {
             if (m_Parent != null)
                 m_Parent.Convert(this, new LastTargetAction());
@@ -1473,26 +1246,9 @@ namespace Assistant.Macros
             return Language.Format(LocString.TargRelLocA3, m_X, m_Y, 0);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public void ReTarget(Targeting.TargetResponseCallback cb)
         {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.ReTarget, new MacroMenuCallback(ReTarget))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ReTarget(object[] args)
-        {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
-
-            Targeting.OneTimeTarget(true, new Targeting.TargetResponseCallback(ReTargetResponse));
+            Targeting.OneTimeTarget(true, ReTargetResponse + cb);
             World.Player.SendMessage(LocString.SelTargAct);
         }
 
@@ -1501,8 +1257,7 @@ namespace Assistant.Macros
             m_X = (sbyte) (pt.X - World.Player.Position.X);
             m_Y = (sbyte) (pt.Y - World.Player.Position.Y);
             // m_Z = (sbyte)(pt.Z - World.Player.Position.Z);
-            if (m_Parent != null)
-                m_Parent.Update();
+            m_Parent?.Update();
         }
     }
 
@@ -1792,25 +1547,14 @@ namespace Assistant.Macros
             return sb.ToString();
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public string Speech
         {
-            if (this.m_MenuItems == null)
-                this.m_MenuItems = (ToolStripMenuItem[]) new MacroMenuItem[1]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(this.Edit), new object[0])
-                };
-            return this.m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            if (InputBox.Show(Language.GetString(LocString.EnterNewText), "Input Box", this.m_Speech))
-                this.m_Speech = InputBox.GetString();
-            if (this.Parent == null)
-                return;
-            this.Parent.Update();
+            get { return m_Speech; }
+            set
+            {
+                m_Speech = value;
+                m_Parent?.Update();
+            }
         }
     }
 
@@ -1869,37 +1613,25 @@ namespace Assistant.Macros
             return sb.ToString();
         }
 
-        private ToolStripMenuItem[] _menuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public string Message
         {
-            return _menuItems ?? (_menuItems = new MacroMenuItem[]
+            get { return _message; }
+            set
             {
-                new MacroMenuItem(LocString.Edit, Edit),
-                new MacroMenuItem(LocString.SetHue, SetHue)
-            });
-        }
-
-        private void Edit(object[] args)
-        {
-            if (InputBox.Show(Language.GetString(LocString.EnterNewText), "Input Box", _message))
-                _message = InputBox.GetString();
-
-            Parent?.Update();
-        }
-
-        private void SetHue(object[] args)
-        {
-            HueEntry h = new HueEntry(_hue);
-
-            if (h.ShowDialog(Engine.MainWindow) == DialogResult.OK)
-            {
-                _hue = (ushort)h.Hue;
+                _message = value;
+                Parent?.Update();
             }
-
-            Parent?.Update();
         }
 
+        public ushort Hue
+        {
+            get { return _hue; }
+            set
+            {
+                _hue = value;
+                Parent?.Update();
+            }
+        }
     }
 
     public class UseSkillAction : MacroAction
@@ -2383,49 +2115,27 @@ namespace Assistant.Macros
 
             return false;
         }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit)),
-                    this.EditTimeoutMenuItem
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertWait(this).ShowDialog(Engine.MainWindow);
-        }
     }
 
     public class WaitForGumpAction : MacroWaitAction
     {
-        private uint m_GumpID;
         private bool m_Strict;
 
         public WaitForGumpAction()
         {
-            m_GumpID = 0;
+            GumpID = 0;
             m_Strict = false;
         }
 
         public WaitForGumpAction(uint gid)
         {
-            m_GumpID = gid;
+            GumpID = gid;
             m_Strict = false;
         }
 
         public WaitForGumpAction(string[] args)
         {
-            m_GumpID = Convert.ToUInt32(args[1]);
+            GumpID = Convert.ToUInt32(args[1]);
             try
             {
                 m_Strict = Convert.ToBoolean(args[2]);
@@ -2452,7 +2162,7 @@ namespace Assistant.Macros
         public override bool PerformWait()
         {
             return !((World.Player.HasGump || World.Player.HasCompressedGump) &&
-                     (World.Player.CurrentGumpI == m_GumpID || !m_Strict || m_GumpID == 0));
+                     (World.Player.CurrentGumpI == GumpID || !m_Strict || GumpID == 0));
 
             //if (!World.Player.HasGump) // Does the player even have a gump?
             //    return true;
@@ -2465,68 +2175,47 @@ namespace Assistant.Macros
 
         public override string ToString()
         {
-            if (m_GumpID == 0 || !m_Strict)
+            if (GumpID == 0 || !m_Strict)
                 return Language.GetString(LocString.WaitAnyGump);
             else
-                return Language.Format(LocString.WaitGumpA1, m_GumpID);
+                return Language.Format(LocString.WaitGumpA1, GumpID);
         }
 
         public override string ToScript()
         {
-            return $"waitforgump {m_GumpID}";
+            return $"waitforgump {GumpID}";
         }
 
         public override string Serialize()
         {
-            return DoSerialize(m_GumpID, m_Strict, m_Timeout.TotalSeconds);
+            return DoSerialize(GumpID, m_Strict, m_Timeout.TotalSeconds);
         }
 
         public override bool CheckMatch(MacroAction a)
         {
             if (a is WaitForGumpAction)
             {
-                if (m_GumpID == 0 || ((WaitForGumpAction) a).m_GumpID == m_GumpID)
+                if (GumpID == 0 || ((WaitForGumpAction) a).GumpID == GumpID)
                     return true;
             }
 
             return false;
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public bool Strict
         {
-            if (m_MenuItems == null)
+            get { return m_Strict; }
+            set
             {
-                m_MenuItems = new MacroMenuItem[]
+                if (m_Strict != value)
                 {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit)),
-                    new MacroMenuItem(LocString.Null, new MacroMenuCallback(ToggleStrict)),
-                    this.EditTimeoutMenuItem
-                };
+                    m_Strict = value;
+                    Parent?.Update();
+                }
             }
-
-            if (!m_Strict)
-                m_MenuItems[1].Text =
-                    $"Change to \"{Language.Format(LocString.WaitGumpA1, m_GumpID)}\"";
-            else
-                m_MenuItems[1].Text = $"Change to \"{Language.GetString(LocString.WaitAnyGump)}\"";
-            m_MenuItems[1].Enabled = m_GumpID != 0 || m_Strict;
-
-            return m_MenuItems;
         }
 
-        private void Edit(object[] args)
-        {
-            new MacroInsertWait(this).ShowDialog(Engine.MainWindow);
-        }
-
-        private void ToggleStrict(object[] args)
-        {
-            m_Strict = !m_Strict;
-            if (m_Parent != null)
-                m_Parent.Update();
-        }
+        public uint GumpID { get; }
     }
 
     public class WaitForTargetAction : MacroWaitAction
@@ -2573,30 +2262,9 @@ namespace Assistant.Macros
             return DoSerialize(m_Timeout.TotalSeconds);
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit)),
-                    this.EditTimeoutMenuItem
-                };
-            }
-
-            return m_MenuItems;
-        }
-
         public override bool CheckMatch(MacroAction a)
         {
             return (a is WaitForTargetAction);
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertWait(this).ShowDialog(Engine.MainWindow);
         }
     }
 
@@ -2641,26 +2309,6 @@ namespace Assistant.Macros
         public override string ToString()
         {
             return Language.Format(LocString.PauseA1, m_Timeout.TotalSeconds);
-        }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertWait(this).ShowDialog(Engine.MainWindow);
         }
     }
 
@@ -2776,27 +2424,6 @@ namespace Assistant.Macros
         public override string ToString()
         {
             return Language.Format(LocString.WaitA3, m_Stat, m_Direction > 0 ? ">=" : "<=", m_Value);
-        }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit)),
-                    this.EditTimeoutMenuItem
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertWait(this).ShowDialog(Engine.MainWindow);
         }
     }
 
@@ -3287,26 +2914,6 @@ namespace Assistant.Macros
                     return "If ( ??? )";
             }
         }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertIf(this).ShowDialog(Engine.MainWindow);
-        }
     }
 
     public class ElseAction : MacroAction
@@ -3418,6 +3025,14 @@ namespace Assistant.Macros
         public int Max
         {
             get { return m_Max; }
+            set
+            {
+                if (m_Max != value)
+                {
+                    m_Max = value;
+                    Parent?.Update();
+                }
+            }
         }
 
         public ForAction(string[] args)
@@ -3448,29 +3063,6 @@ namespace Assistant.Macros
         public override string ToString()
         {
             return $"For ( 1 to {m_Max} )";
-        }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            if (InputBox.Show(Language.GetString(LocString.NumIter), "Input Box", m_Max.ToString()))
-                m_Max = InputBox.GetInt(m_Max);
-            if (Parent != null)
-                Parent.Update();
         }
     }
 
@@ -3981,26 +3573,6 @@ namespace Assistant.Macros
                     return "While ( ??? )";
             }
         }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertWhile(this).ShowDialog(Engine.MainWindow);
-        }
     }
 
     public class EndWhileAction : MacroAction
@@ -4467,26 +4039,6 @@ namespace Assistant.Macros
                     return "Do While ( ??? )";
             }
         }
-
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit))
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertDoWhile(this).ShowDialog(Engine.MainWindow);
-        }
     }
 
     public class ContextMenuAction : MacroAction
@@ -4594,47 +4146,36 @@ namespace Assistant.Macros
             return $"PromptAction: {m_Response}";
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public string Response
         {
-            if (this.m_MenuItems == null)
-                this.m_MenuItems = (ToolStripMenuItem[]) new MacroMenuItem[1]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(this.Edit), new object[0])
-                };
-            return this.m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            if (InputBox.Show(Language.GetString(LocString.EnterNewText), "Input Box", this.m_Response))
-                m_Response = InputBox.GetString();
-
-            Parent?.Update();
+            get { return m_Response; }
+            set
+            {
+                m_Response = value;
+                Parent?.Update();
+            }
         }
     }
 
     public class WaitForPromptAction : MacroWaitAction
     {
-        private uint m_PromptID;
         private bool m_Strict;
 
         public WaitForPromptAction()
         {
-            m_PromptID = 0;
+            PromptID = 0;
             m_Strict = false;
         }
 
         public WaitForPromptAction(uint gid)
         {
-            m_PromptID = gid;
+            PromptID = gid;
             m_Strict = false;
         }
 
         public WaitForPromptAction(string[] args)
         {
-            m_PromptID = Convert.ToUInt32(args[1]);
+            PromptID = Convert.ToUInt32(args[1]);
             try
             {
                 m_Strict = Convert.ToBoolean(args[2]);
@@ -4660,7 +4201,7 @@ namespace Assistant.Macros
 
         public override bool PerformWait()
         {
-            return !(World.Player.HasPrompt && (World.Player.PromptID == m_PromptID || !m_Strict || m_PromptID == 0));
+            return !(World.Player.HasPrompt && (World.Player.PromptID == PromptID || !m_Strict || PromptID == 0));
         }
 
         public override string ToString()
@@ -4670,67 +4211,42 @@ namespace Assistant.Macros
             //else
             //    return Language.Format(LocString.WaitGumpA1, m_GumpID);
 
-            if (m_PromptID == 0 || !m_Strict)
+            if (PromptID == 0 || !m_Strict)
                 return "Wait For Prompt (Any)";
 
-            return $"Wait For Prompt ({m_PromptID})";
+            return $"Wait For Prompt ({PromptID})";
         }
 
         public override string ToScript()
         {
-            return m_PromptID == 0 || !m_Strict ? "waitforprompt" : $"waitforprompt '{m_PromptID}'";
+            return PromptID == 0 || !m_Strict ? "waitforprompt" : $"waitforprompt '{PromptID}'";
         }
 
         public override string Serialize()
         {
-            return DoSerialize(m_PromptID, m_Strict, m_Timeout.TotalSeconds);
+            return DoSerialize(PromptID, m_Strict, m_Timeout.TotalSeconds);
         }
 
         public override bool CheckMatch(MacroAction a)
         {
             if (a is WaitForGumpAction)
             {
-                if (m_PromptID == 0 || ((WaitForPromptAction) a).m_PromptID == m_PromptID)
+                if (PromptID == 0 || ((WaitForPromptAction) a).PromptID == PromptID)
                     return true;
             }
 
             return false;
         }
 
-        private ToolStripMenuItem[] m_MenuItems;
-
-        public override ToolStripMenuItem[] GetContextMenuItems()
+        public uint PromptID { get; }
+        public bool Strict
         {
-            if (m_MenuItems == null)
+            get { return m_Strict; }
+            set
             {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem(LocString.Edit, new MacroMenuCallback(Edit)),
-                    new MacroMenuItem(LocString.Null, new MacroMenuCallback(ToggleStrict)),
-                    this.EditTimeoutMenuItem
-                };
+                m_Strict = value;
+                Parent?.Update();
             }
-
-            if (!m_Strict)
-                m_MenuItems[1].Text = $"Change to \"Wait For Prompt ({m_PromptID})\"";
-            else
-                m_MenuItems[1].Text = $"Change to \"Wait For Prompt (Any)\"";
-
-            m_MenuItems[1].Enabled = m_PromptID != 0 || m_Strict;
-
-            return m_MenuItems;
-        }
-
-        private void Edit(object[] args)
-        {
-            new MacroInsertWait(this).ShowDialog(Engine.MainWindow);
-        }
-
-        private void ToggleStrict(object[] args)
-        {
-            m_Strict = !m_Strict;
-            if (m_Parent != null)
-                m_Parent.Update();
         }
     }
 }
