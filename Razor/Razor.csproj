@@ -379,7 +379,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UI\Agents\AgentControls.cs" />
+    <Compile Include="UI\Agents\AgentManagerFactory.cs" />
     <Compile Include="UI\Agents\AgentTabManager.cs" />
+    <Compile Include="UI\Agents\IAgentManager.cs" />
     <Compile Include="UI\BuffDebuff.cs">
       <SubType>Form</SubType>
     </Compile>
