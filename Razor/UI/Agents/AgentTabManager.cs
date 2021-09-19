@@ -10,68 +10,68 @@ namespace Assistant.UI.Agents
 {
     public class AgentTabManager
     {
-        private static ComboBox _agents;
-        private static GroupBox _group;
-        private static ListBox _subList;
-        private static Button[] _buttons;
+        private static AgentControls _controls;
+        private static ComboBox Agents => _controls.AgentList;
+        private static GroupBox Group => _controls.Group;
+        private static ListBox SubList => _controls.SubList;
+        private static Button[] Buttons => _controls.Buttons;
 
         public static void SetControls(ComboBox agents, GroupBox group, ListBox subList, params Button[] buttons)
         {
-            _agents = agents;
-            _group = group;
-            _subList = subList;
-            _buttons = buttons;
+            _controls = new AgentControls
+            {
+                AgentList = agents,
+                Group = group,
+                SubList = subList,
+                Buttons = buttons
+            };
         }
 
         public static void Redraw()
         {
-            int sel = _agents.SelectedIndex;
-            _agents.Visible = true;
-            _agents.BeginUpdate();
-            _agents.Items.Clear();
-            _agents.SelectedIndex = -1;
+            int sel = Agents.SelectedIndex;
+            Agents.Visible = true;
+            Agents.BeginUpdate();
+            Agents.Items.Clear();
+            Agents.SelectedIndex = -1;
 
-            foreach (var button in _buttons)
+            foreach (var button in Buttons)
             {
                 button.Visible = false;
             }
 
-            _agents.Items.AddRange(Agent.List.ToArray());
-            _agents.EndUpdate();
+            Agents.Items.AddRange(Agent.List.ToArray());
+            Agents.EndUpdate();
 
-            _group.Visible = false;
-            if (sel >= 0 && sel < _agents.Items.Count)
+            Group.Visible = false;
+            if (sel >= 0 && sel < Agents.Items.Count)
             {
-                _agents.SelectedIndex = sel;
+                Agents.SelectedIndex = sel;
             }
         }
 
+
+        private static Agent CurrentAgent => Agents.SelectedItem as Agent;
+
         public static void OnAgentSelected()
         {
-            int idx = _agents.SelectedIndex;
-            foreach (var button in _buttons)
+            int idx = Agents.SelectedIndex;
+            foreach (var button in Buttons)
             {
                 button.Visible = false;
                 button.Text = "";
-                Engine.MainWindow.SafeAction(s => s.UnlockControl(button));
             }
 
-            _group.Visible = false;
-            _subList.Visible = false;
-            Engine.MainWindow.SafeAction(s => s.UnlockControl(_subList));
+            Group.Visible = false;
+            SubList.Visible = false;
 
-            Agent a = null;
-            if (idx >= 0 && idx < Agent.List.Count)
-            {
-                a = Agent.List[idx] as Agent;
-            }
+            _controls.Unlock();
 
-            if (a != null)
+            if (CurrentAgent != null)
             {
-                _group.Visible = true;
-                _group.Text = a.Name;
-                _subList.Visible = true;
-                a.OnSelected(_subList, _buttons);
+                Group.Visible = true;
+                Group.Text = CurrentAgent.Name;
+                SubList.Visible = true;
             }
         }
     }

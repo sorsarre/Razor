@@ -378,7 +378,8 @@
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="UI\Agents\AgentManager.cs" />
+    <Compile Include="UI\Agents\AgentControls.cs" />
+    <Compile Include="UI\Agents\AgentTabManager.cs" />
     <Compile Include="UI\BuffDebuff.cs">
       <SubType>Form</SubType>
     </Compile>
