@@ -18,6 +18,7 @@
 
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Xml;
@@ -110,7 +111,15 @@ namespace Assistant.Agents
         public abstract void Save(XmlTextWriter xml);
         public abstract void Load(XmlElement node);
         public abstract void Clear();
-        public abstract void OnSelected(ListBox subList, params Button[] buttons);
-        public abstract void OnButtonPress(int num);
+
+        public virtual void OnSelected(ListBox subList, params Button[] buttons)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void OnButtonPress(int num)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
