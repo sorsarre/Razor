@@ -14,6 +14,7 @@ namespace Assistant.UI.Agents
             switch (agent)
             {
                 case UseOnceAgent a: return new UseOnceAgentManager(a, controls);
+                case SellAgent a: return new SellAgentManager(a, controls);
                 default: return null;
             }
         }

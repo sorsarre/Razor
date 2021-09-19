@@ -382,6 +382,7 @@
     <Compile Include="UI\Agents\AgentManagerFactory.cs" />
     <Compile Include="UI\Agents\AgentTabManager.cs" />
     <Compile Include="UI\Agents\IAgentManager.cs" />
+    <Compile Include="UI\Agents\SellAgentManager.cs" />
     <Compile Include="UI\Agents\UseOnceAgentManager.cs" />
     <Compile Include="UI\BuffDebuff.cs">
       <SubType>Form</SubType>

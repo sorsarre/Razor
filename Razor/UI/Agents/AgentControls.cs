@@ -20,6 +20,17 @@ namespace Assistant.UI.Agents
             Buttons[index].Text = Language.GetString(text);
         }
 
+        public void SetButtonState(int index, bool visible, string text)
+        {
+            Buttons[index].Visible = visible;
+            Buttons[index].Text = text;
+        }
+
+        public void SetButtonState(int index, bool visible)
+        {
+            Buttons[index].Visible = visible;
+        }
+
         public void Lock()
         {
             foreach (var button in Buttons)

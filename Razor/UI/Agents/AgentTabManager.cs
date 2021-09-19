@@ -11,7 +11,7 @@ namespace Assistant.UI.Agents
     public class AgentTabManager
     {
         private static AgentControls _controls;
-        private static AgentManagerFactory _factory = new AgentManagerFactory();
+        private static readonly AgentManagerFactory _factory = new AgentManagerFactory();
         private static IAgentManager _currentManager;
         private static ComboBox Agents => _controls.AgentList;
         private static GroupBox Group => _controls.Group;
@@ -64,7 +64,6 @@ namespace Assistant.UI.Agents
 
         public static void OnAgentSelected()
         {
-            int idx = Agents.SelectedIndex;
             foreach (var button in Buttons)
             {
                 button.Visible = false;

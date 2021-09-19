@@ -20,12 +20,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Xml;
-using Assistant.UI;
 
 namespace Assistant.Agents
 {
+    public interface ISellAgentEventHandler
+    {
+        void OnItemAdded(ushort item);
+        void OnItemRemovedAt(int index);
+        void OnItemsCleared();
+        void OnHotBagChanged();
+        void OnAgentToggled();
+        void OnAmountChanged();
+        void OnTargetAcquired();
+    }
+
     public class SellAgent : Agent
     {
         public static SellAgent Instance { get; private set; }
@@ -35,10 +44,6 @@ namespace Assistant.Agents
             Agent.Add(Instance = new SellAgent());
         }
 
-        private ListBox m_SubList;
-        private Button m_EnableBTN;
-        private Button m_HotBTN;
-        private Button m_AmountButton;
         private readonly List<ushort> m_Items;
         private Serial m_HotBag;
         private bool m_Enabled;
@@ -168,121 +173,68 @@ namespace Assistant.Agents
 
         public override int Number { get; }
 
-        public override void OnSelected(ListBox subList, params Button[] buttons)
+        public bool Enabled => m_Enabled;
+        public bool HotBagSet => (m_HotBag != Serial.Zero);
+
+        public IReadOnlyList<ushort> Items => m_Items;
+
+        public ISellAgentEventHandler EventHandler { get; set; }
+
+        public void AddItem()
         {
-            m_SubList = subList;
-            m_EnableBTN = buttons[5];
-            m_HotBTN = buttons[2];
-            m_AmountButton = buttons[4];
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
+        }
 
-            buttons[0].Text = Language.GetString(LocString.AddTarg);
-            buttons[0].Visible = true;
-            buttons[1].Text = Language.GetString(LocString.Remove);
-            buttons[1].Visible = true;
-            //button[2] = hotbutton
-            buttons[2].Visible = true;
-            buttons[3].Text = Language.GetString(LocString.Clear);
-            buttons[3].Visible = true;
-            m_AmountButton.Text = Language.Format(LocString.SellAmount, Config.GetInt("SellAgentMax"));
-            buttons[4].Visible = true;
-            buttons[5].Text = Language.GetString(m_Enabled ? LocString.PushDisable : LocString.PushEnable);
-            buttons[5].Visible = true;
+        public void RemoveItemAt(int index)
+        {
+            m_Items.RemoveAt(index);
+            EventHandler?.OnItemRemovedAt(index);
+        }
 
-            SetHBText();
-            m_SubList.BeginUpdate();
-            m_SubList.Items.Clear();
-            for (int i = 0; i < m_Items.Count; i++)
+        public void ToggleHotBag()
+        {
+            if (m_HotBag == Serial.Zero)
             {
-                m_SubList.Items.Add((ItemID) ((ushort) m_Items[i]));
+                SetHotBag();
             }
-
-            m_SubList.EndUpdate();
-
-            if (!Client.Instance.AllowBit(FeatureBit.SellAgent) && Engine.MainWindow != null)
+            else
             {
-                for (int i = 0; i < buttons.Length; i++)
+                Item hb = World.FindItem(m_HotBag);
+                if (hb != null)
                 {
-                    Engine.MainWindow.SafeAction(s => s.LockControl(buttons[i]));
+                    if (hb.ObjPropList.Remove(Language.GetString(LocString.SellHB)))
+                    {
+                        hb.OPLChanged();
+                    }
                 }
 
-                Engine.MainWindow.SafeAction(s => s.LockControl(subList));
+                m_HotBag = Serial.Zero;
+                EventHandler?.OnHotBagChanged();
             }
         }
 
-        public override void OnButtonPress(int num)
+        public void ClearItems()
         {
-            switch (num)
-            {
-                case 1:
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
-                    break;
-                case 2:
-                    if (m_SubList.SelectedIndex >= 0)
-                    {
-                        m_Items.RemoveAt(m_SubList.SelectedIndex);
-                        m_SubList.Items.RemoveAt(m_SubList.SelectedIndex);
-                        m_SubList.SelectedIndex = -1;
-                    }
-
-                    break;
-                case 3:
-                    if (m_HotBag == Serial.Zero)
-                    {
-                        World.Player.SendMessage(MsgLevel.Force, LocString.TargCont);
-                        Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnHBTarget));
-                    }
-                    else
-                    {
-                        Item hb = World.FindItem(m_HotBag);
-                        if (hb != null)
-                        {
-                            if (hb.ObjPropList.Remove(Language.GetString(LocString.SellHB)))
-                            {
-                                hb.OPLChanged();
-                            }
-                        }
-
-                        m_HotBag = Serial.Zero;
-                        SetHBText();
-                    }
-
-                    break;
-                case 4:
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        m_SubList.Items.Clear();
-                        m_Items.Clear();
-                    }
-
-                    break;
-                case 5:
-                    if (InputBox.Show(Language.GetString(LocString.EnterAmount)))
-                    {
-                        Config.SetProperty("SellAgentMax", InputBox.GetInt(100));
-                    }
-
-                    m_AmountButton.Text = Language.Format(LocString.SellAmount, Config.GetInt("SellAgentMax"));
-                    break;
-                case 6:
-                    m_Enabled = !m_Enabled;
-                    m_EnableBTN.Text = Language.GetString(m_Enabled ? LocString.PushDisable : LocString.PushEnable);
-                    break;
-            }
+            m_Items.Clear();
+            EventHandler?.OnItemsCleared();
         }
 
-        private void SetHBText()
+        public void SetAmount(int amount)
         {
-            m_HotBTN?.SafeAction(s =>
-            {
-                s.Text = Language.GetString(m_HotBag == Serial.Zero ? LocString.SetHB : LocString.ClearHB);
-            });
+            Config.SetProperty("SellAgentMax", amount);
+            EventHandler?.OnAmountChanged();
+        }
+
+        public void Toggle()
+        {
+            m_Enabled = !m_Enabled;
+            EventHandler?.OnAgentToggled();
         }
 
         private void OnTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
             if (!location && serial.IsItem)
             {
                 Add(gfx);
@@ -292,18 +244,18 @@ namespace Assistant.Agents
         public void Add(ItemID itemId)
         {
             m_Items?.Add(itemId);
-            m_SubList?.Items.Add((ItemID)itemId);
+            EventHandler?.OnItemAdded(itemId.Value);
 
             World.Player?.SendMessage(MsgLevel.Force, LocString.ItemAdded);
         }
 
         private void OnHBTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
             if (!location && serial.IsItem)
             {
                 m_HotBag = serial;
-                SetHBText();
+                EventHandler?.OnHotBagChanged();
 
                 Item hb = World.FindItem(m_HotBag);
                 if (hb != null)
@@ -319,38 +271,6 @@ namespace Assistant.Agents
             World.Player.SendMessage(MsgLevel.Force, LocString.TargCont);
             Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnHBTarget));
         }
-
-        /*private void OnHBTarget(bool location, Serial serial, Point3D loc, ushort gfx)
-        {
-            Engine.MainWindow.SafeAction(s => s.ShowMe(););
-
-            Item hb = World.FindItem(m_HotBag);
-            if (hb != null)
-            {
-                if (hb.ObjPropList.Remove(Language.Format(LocString.RestockHBA1, m_Num)))
-                {
-                    hb.OPLChanged();
-                }
-            }
-
-            if (!location && serial.IsItem)
-            {
-                m_HotBag = serial;
-            }
-            else
-            {
-                m_HotBag = Serial.Zero;
-            }
-
-            hb = World.FindItem(m_HotBag);
-            if (hb != null)
-            {
-                hb.ObjPropList.Add(Language.Format(LocString.RestockHBA1, m_Num));
-                hb.OPLChanged();
-            }
-
-            SetHBText();
-        }*/
 
         public override void Save(XmlTextWriter xml)
         {
