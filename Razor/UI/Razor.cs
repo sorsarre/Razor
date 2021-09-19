@@ -2070,7 +2070,7 @@ namespace Assistant
             if (a == null)
                 agentList.SelectedIndex = -1;
             else
-                a.OnButtonPress(b);
+                AgentTabManager.OnButtonPress(b);
         }
 
         private void agentB1_Click(object sender, System.EventArgs e)
@@ -4863,10 +4863,10 @@ namespace Assistant
                 switch (agentList.SelectedItem)
                 {
                     case RestockAgent _:
-                        a.OnButtonPress(3);
+                        AgentTabManager.OnButtonPress(3);
                         break;
                     case BuyAgent _:
-                        a.OnButtonPress(2);
+                        AgentTabManager.OnButtonPress(2);
                         break;
                 }
             }

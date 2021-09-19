@@ -256,10 +256,9 @@ namespace Assistant
             string use = Language.GetString(LocString.UseOnce);
             for (int i = 0; i < Agent.List.Count; i++)
             {
-                Agent a = Agent.List[i];
-                if (a.Name == use)
+                if (Agent.List[i] is UseOnceAgent a)
                 {
-                    a.OnButtonPress(1);
+                    a?.AddItem();
                     break;
                 }
             }

@@ -89,11 +89,11 @@ namespace Assistant.Scripts
 
             if (add)
             {
-                UseOnceAgent.Instance.OnAdd();
+                UseOnceAgent.Instance.AddItem();
             }
             else if (container)
             {
-                UseOnceAgent.Instance.OnAddContainer();
+                UseOnceAgent.Instance.AddContainer();
             }
             else
             {
