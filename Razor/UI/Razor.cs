@@ -2726,7 +2726,7 @@ namespace Assistant
                     menu.Items.Add(Language.GetString(LocString.BeginRec), null, onMacroBegRecHere);
                     menu.Items.Add(Language.GetString(LocString.PlayFromHere), null, onMacroPlayHere);
 
-                    ToolStripMenuItem[] aMenus = a.GetContextMenuItems();
+                    ToolStripMenuItem[] aMenus = MacroMenuItemFactory.GetContextMenuItems(a);
                     if (aMenus != null && aMenus.Length > 0)
                     {
                         menu.Items.Add("-");
@@ -2780,7 +2780,7 @@ namespace Assistant
                 if (a == null)
                     return;
 
-                ToolStripMenuItem[] aMenus = a.GetContextMenuItems();
+                ToolStripMenuItem[] aMenus = MacroMenuItemFactory.GetContextMenuItems(a);
 
                 if (aMenus != null && aMenus.Length > 0)
                 {
@@ -2788,7 +2788,7 @@ namespace Assistant
                     {
                         if (a.GetType().Name.Equals("IfAction"))
                         {
-                            new MacroInsertIf(a).ShowDialog(Engine.MainWindow);
+                            aMenus[0].PerformClick();
                         }
                         else if (a.GetType().Name.Equals("ForAction"))
                         {

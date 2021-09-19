@@ -272,9 +272,7 @@
     <Compile Include="Scripts\Engine\Interpreter.cs" />
     <Compile Include="Scripts\Engine\Lexer.cs" />
     <Compile Include="Macros\MacroVariables.cs" />
-    <Compile Include="Macros\Actions.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="Macros\Actions.cs" />
     <Compile Include="Macros\Macro.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -414,6 +412,9 @@
     </Compile>
     <Compile Include="UI\MacroInsertWait.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\MacroMenuActions.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="UI\MacroTabManager.cs" />
     <Compile Include="UI\MessageDialog.cs">
