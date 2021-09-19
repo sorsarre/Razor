@@ -20,12 +20,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Xml;
-using Assistant.UI;
 
 namespace Assistant.Agents
 {
+    public interface IScavengerAgentEventHandler
+    {
+        void OnAgentToggled();
+        void OnItemAdded(ItemID itemID);
+        void OnItemRemovedAt(int index);
+        void OnItemsCleared();
+        void OnTargetAcquired();
+    }
+
     public class ScavengerAgent : Agent
     {
         private static readonly ScavengerAgent m_Instance = new ScavengerAgent();
@@ -44,12 +51,12 @@ namespace Assistant.Agents
 
         private bool m_Enabled;
         private Serial m_Bag;
-        private ListBox m_SubList;
-        private Button m_EnButton;
         private readonly List<ItemID> m_Items;
 
         private List<Serial> m_Cache;
         private Item m_BagRef;
+
+        public IScavengerAgentEventHandler EventHandler { get; set; }
 
         public ScavengerAgent()
         {
@@ -58,59 +65,27 @@ namespace Assistant.Agents
             Number = 0;
 
             HotKey.Add(HKCategory.Agents, LocString.ClearScavCache, new HotKeyCallback(ClearCache));
-            HotKey.Add(HKCategory.Agents, LocString.ScavengerEnableDisable, new HotKeyCallback(OnEnableDisable));
-            HotKey.Add(HKCategory.Agents, LocString.ScavengerSetHotBag, new HotKeyCallback(OnSetHotBag));
-            HotKey.Add(HKCategory.Agents, LocString.ScavengerAddTarget, new HotKeyCallback(OnAddToHotBag));
+            HotKey.Add(HKCategory.Agents, LocString.ScavengerEnableDisable, new HotKeyCallback(ToggleAgent));
+            HotKey.Add(HKCategory.Agents, LocString.ScavengerSetHotBag, new HotKeyCallback(SetHotBag));
+            HotKey.Add(HKCategory.Agents, LocString.ScavengerAddTarget, new HotKeyCallback(AddItem));
 
             PacketHandler.RegisterClientToServerViewer(0x09, new PacketViewerCallback(OnSingleClick));
 
             Agent.OnItemCreated += new ItemCreatedEventHandler(CheckBagOPL);
         }
 
-        public void ToggleEnabled()
-        {
-            OnEnableDisable();
-        }
-
         public void Disable()
         {
             m_Enabled = false;
-            UpdateEnableButton();
+            EventHandler?.OnAgentToggled();
             World.Player.SendMessage(MsgLevel.Force, "Scavenger Agent Disabled");
         }
 
         public void Enable()
         {
             m_Enabled = true;
-            UpdateEnableButton();
+            EventHandler?.OnAgentToggled();
             World.Player.SendMessage(MsgLevel.Force, "Scavenger Agent Enabled");
-        }
-
-        private void OnEnableDisable()
-        {
-            m_Enabled = !m_Enabled;
-            UpdateEnableButton();
-
-            if (m_Enabled)
-            {
-                World.Player.SendMessage(MsgLevel.Force, "Scavenger Agent Enabled");
-            }
-            else
-            {
-                World.Player.SendMessage(MsgLevel.Force, "Scavenger Agent Disabled");
-            }
-        }
-
-        public void OnAddToHotBag()
-        {
-            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
-        }
-
-        public void OnSetHotBag()
-        {
-            World.Player.SendMessage(LocString.TargCont);
-            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetBag));
         }
 
         private void CheckBagOPL(Item item)
@@ -156,79 +131,44 @@ namespace Assistant.Agents
 
         public override int Number { get; }
 
-        public override void OnSelected(ListBox subList, params Button[] buttons)
+        public IReadOnlyList<ItemID> Items => m_Items;
+
+        public void AddItem()
         {
-            buttons[0].Text = Language.GetString(LocString.AddTarg);
-            buttons[0].Visible = true;
-            buttons[1].Text = Language.GetString(LocString.Remove);
-            buttons[1].Visible = true;
-            buttons[2].Text = Language.GetString(LocString.SetHB);
-            buttons[2].Visible = true;
-            buttons[3].Text = Language.GetString(LocString.ClearList);
-            buttons[3].Visible = true;
-            buttons[4].Text = Language.GetString(LocString.ClearScavCache);
-            buttons[4].Visible = true;
-            m_EnButton = buttons[5];
-            m_EnButton.Visible = true;
-            UpdateEnableButton();
-
-            m_SubList = subList;
-            subList.BeginUpdate();
-            subList.Items.Clear();
-
-            for (int i = 0; i < m_Items.Count; i++)
-            {
-                subList.Items.Add(m_Items[i]);
-            }
-
-            subList.EndUpdate();
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
         }
 
-        private void UpdateEnableButton()
+        public void SetHotBag()
         {
-            if (m_EnButton != null)
-            {
-                m_EnButton.Text = Language.GetString(m_Enabled ? LocString.PushDisable : LocString.PushEnable);
-            }
+            World.Player.SendMessage(LocString.TargCont);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetBag));
         }
 
-        public override void OnButtonPress(int num)
+        public void RemoveItemAt(int index)
         {
-            DebugLog("User pressed button {0}", num);
-            switch (num)
+            m_Items.RemoveAt(index);
+            EventHandler?.OnItemRemovedAt(index);
+        }
+
+        public void ClearItems()
+        {
+            m_Items.Clear();
+            EventHandler?.OnItemsCleared();
+        }
+
+        public void ToggleAgent()
+        {
+            m_Enabled = !m_Enabled;
+            EventHandler?.OnAgentToggled();
+
+            if (m_Enabled)
             {
-                case 1:
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
-                    break;
-                case 2:
-                    if (m_SubList.SelectedIndex >= 0 && m_SubList.SelectedIndex < m_Items.Count)
-                    {
-                        m_Items.RemoveAt(m_SubList.SelectedIndex);
-                        m_SubList.Items.RemoveAt(m_SubList.SelectedIndex);
-                    }
-
-                    break;
-                case 3:
-                    World.Player.SendMessage(LocString.TargCont);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetBag));
-                    break;
-                case 4:
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        m_SubList.Items.Clear();
-                        m_Items.Clear();
-                    }
-
-                    break;
-                case 5:
-                    ClearCache();
-                    break;
-                case 6:
-                    m_Enabled = !m_Enabled;
-                    UpdateEnableButton();
-                    break;
+                World.Player.SendMessage(MsgLevel.Force, "Scavenger Agent Enabled");
+            }
+            else
+            {
+                World.Player.SendMessage(MsgLevel.Force, "Scavenger Agent Disabled");
             }
         }
 
@@ -248,7 +188,7 @@ namespace Assistant.Agents
 
         private void OnTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
 
             if (location || !serial.IsItem)
             {
@@ -267,7 +207,7 @@ namespace Assistant.Agents
         public void Add(ItemID itemId)
         {
             m_Items?.Add(itemId);
-            m_SubList?.Items.Add(itemId);
+            EventHandler?.OnItemAdded(itemId);
 
             DebugLog("Added item {0}", itemId);
 
@@ -276,7 +216,7 @@ namespace Assistant.Agents
 
         private void OnTargetBag(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
 
             if (location || !serial.IsItem)
             {

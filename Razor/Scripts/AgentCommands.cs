@@ -179,7 +179,7 @@ namespace Assistant.Scripts
             }
             else if (add)
             {
-                ScavengerAgent.Instance.OnAddToHotBag();
+                ScavengerAgent.Instance.AddItem();
             }
             else if (status)
             {
@@ -194,7 +194,7 @@ namespace Assistant.Scripts
             }
             else if (set)
             {
-                ScavengerAgent.Instance.OnSetHotBag();
+                ScavengerAgent.Instance.SetHotBag();
             }
 
             return true;
