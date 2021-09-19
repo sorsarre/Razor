@@ -9,21 +9,29 @@ namespace Assistant.UI.Agents
         public ListBox SubList { get; set; }
         public Button[] Buttons { get; set; }
 
-        public void SetButtonState(int index, bool visible, LocString text)
+        public void SetButtonState(int index, LocString text)
         {
-            Buttons[index].Visible = visible;
-            Buttons[index].Text = Language.GetString(text);
+
+            SetButtonState(index, Language.GetString(text));
         }
 
-        public void SetButtonState(int index, bool visible, string text)
+        public void SetButtonState(int index, string text)
         {
-            Buttons[index].Visible = visible;
-            Buttons[index].Text = text;
+            Buttons[index].SafeAction(s =>
+            {
+                s.Visible = true;
+                s.Text = text;
+            });
         }
 
-        public void SetButtonState(int index, bool visible)
+        public void SetButtonText(int index, string text)
         {
-            Buttons[index].Visible = visible;
+            Buttons[index].SafeAction(s => s.Text = text);
+        }
+
+        public void SetButtonText(int index, LocString text)
+        {
+            SetButtonText(index, Language.GetString(text));
         }
 
         public void Lock()

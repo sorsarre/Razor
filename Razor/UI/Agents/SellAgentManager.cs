@@ -73,12 +73,12 @@ namespace Assistant.UI.Agents
 
         public void OnSelected()
         {
-            _controls.SetButtonState(0, true, LocString.AddTarg);
-            _controls.SetButtonState(1, true, LocString.Remove);
-            _controls.SetButtonState(2, true, HotBagText);
-            _controls.SetButtonState(3, true, LocString.Clear);
-            _controls.SetButtonState(4, true, AmountText);
-            _controls.SetButtonState(5, true, ToggleText);
+            _controls.SetButtonState(0, LocString.AddTarg);
+            _controls.SetButtonState(1, LocString.Remove);
+            _controls.SetButtonState(2, HotBagText);
+            _controls.SetButtonState(3, LocString.Clear);
+            _controls.SetButtonState(4, AmountText);
+            _controls.SetButtonState(5, ToggleText);
 
             SubList.BeginUpdate();
             SubList.Items.Clear();
