@@ -83,7 +83,7 @@ namespace Assistant
             WaypointManager.OnWaypointsChanged += this.RefreshWaypoints;
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
-            AgentManager.SetControls(
+            AgentTabManager.SetControls(
                 agentList,
                 agentGroup,
                 agentSubList,
@@ -690,7 +690,7 @@ namespace Assistant
             }
             else if (tabs.SelectedTab == agentsTab)
             {
-                AgentManager.Redraw();
+                AgentTabManager.Redraw();
             }
             else if (tabs.SelectedTab == advancedTab)
             {
@@ -2053,7 +2053,7 @@ namespace Assistant
         {
             try
             {
-                AgentManager.OnAgentSelected();
+                AgentTabManager.OnAgentSelected();
                 agentSetHotKey.Visible = true;
             }
             catch

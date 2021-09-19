@@ -8,7 +8,7 @@ using Assistant.Agents;
 
 namespace Assistant.UI.Agents
 {
-    public class AgentManager
+    public class AgentTabManager
     {
         private static ComboBox _agents;
         private static GroupBox _group;
