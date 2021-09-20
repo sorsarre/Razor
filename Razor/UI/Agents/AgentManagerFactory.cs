@@ -14,6 +14,7 @@ namespace Assistant.UI.Agents
                 case ScavengerAgent a: return new ScavengerAgentManager(a, controls);
                 case RestockAgent a: return new RestockAgentManager(a, controls);
                 case OrganizerAgent a: return new OrganizerAgentManager(a, controls);
+                case IgnoreAgent a: return new IgnoreAgentManager(a, controls);
                 default: return null;
             }
         }
