@@ -161,6 +161,15 @@ namespace Assistant.Agents
             Items.Clear();
         }
 
+        private void RemoveItemAt(int index)
+        {
+            if (Utility.IndexInRange(Items, index))
+            {
+                Items.RemoveAt(index);
+                EventHandler.OnItemRemovedAt(index);
+            }
+        }
+
         private void OnTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
             EventHandler?.OnTargetAcquired();
@@ -213,8 +222,7 @@ namespace Assistant.Agents
 
                     if (rem)
                     {
-                        Items.RemoveAt(i);
-                        EventHandler?.OnItemRemovedAt(i);
+                        RemoveItemAt(i);
                         World.Player.SendMessage(MsgLevel.Force, LocString.ItemRemoved);
                         return;
                     }
@@ -308,14 +316,7 @@ namespace Assistant.Agents
                     item = World.FindItem((Serial) Items[0]);
                 }
 
-                try
-                {
-                    Items.RemoveAt(0);
-                    EventHandler?.OnItemRemovedAt(0);
-                }
-                catch
-                {
-                }
+                RemoveItemAt(0);
 
                 if (item != null)
                 {

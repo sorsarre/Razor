@@ -40,10 +40,7 @@ namespace Assistant.UI.Agents
                     break;
 
                 case 3:
-                    if (SubList.SelectedIndex >= 0 && SubList.SelectedIndex < _agent.Items.Count)
-                    {
-                        _agent.RemoveItemAt(SubList.SelectedIndex);
-                    }
+                    _agent.RemoveItemAt(SubList.SelectedIndex);
                     break;
 
                 case 4:
@@ -99,7 +96,12 @@ namespace Assistant.UI.Agents
 
         public void OnItemRemovedAt(int index)
         {
-            SubList.SafeAction(s => s.Items.RemoveAt(index));
+            SubList.SafeAction(s => {
+                if (Utility.IndexInRange(s.Items, index))
+                {
+                    s.Items.RemoveAt(index);
+                }
+            });
         }
 
         public void OnItemsCleared()

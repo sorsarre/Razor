@@ -188,8 +188,11 @@ namespace Assistant.Agents
 
         public void RemoveItemAt(int index)
         {
-            m_Items.RemoveAt(index);
-            EventHandler?.OnItemRemovedAt(index);
+            if (Utility.IndexInRange(m_Items, index))
+            {
+                m_Items.RemoveAt(index);
+                EventHandler?.OnItemRemovedAt(index);
+            }
         }
 
         public void ToggleHotBag()

@@ -54,9 +54,9 @@ namespace Assistant.UI.Agents
 
         public void OnItemRemovedAt(int index)
         {
-            if (0 <= index && index < _controls.SubList.Items.Count)
+            if (Utility.IndexInRange(_controls.SubList.Items, index))
             {
-                _controls.SubList.Items.RemoveAt(index);
+                _controls.SubList.SafeAction(s => s.Items.RemoveAt(index));
             }
         }
 

@@ -19,6 +19,8 @@
 #endregion
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Globalization;
@@ -35,6 +37,11 @@ namespace Assistant
         public static int Random(int min, int max)
         {
             return m_Random.Next(max - min + 1) + min;
+        }
+
+        public static bool IndexInRange(ICollection collection, int index)
+        {
+            return (0 <= index && index < collection.Count);
         }
 
         public static int Random(int num)

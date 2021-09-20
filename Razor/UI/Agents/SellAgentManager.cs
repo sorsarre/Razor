@@ -108,7 +108,7 @@ namespace Assistant.UI.Agents
         {
             SubList.SafeAction(s =>
             {
-                if (0 <= index && index < s.Items.Count)
+                if (Utility.IndexInRange(s.Items, index))
                 {
                     s.Items.RemoveAt(index);
                     s.SelectedIndex = -1;
