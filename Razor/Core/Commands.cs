@@ -195,7 +195,7 @@ namespace Assistant
             }
 
             // Save and reload the macros and vars
-            Engine.MainWindow.SaveMacroVariables();
+            MacroVariables.OnItemsChanged?.Invoke();
         }
 
         private static void SetWeather(string[] param)
