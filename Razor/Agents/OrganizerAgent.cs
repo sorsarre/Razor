@@ -20,12 +20,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Xml;
-using Assistant.UI;
 
 namespace Assistant.Agents
 {
+    public interface IOrganizerAgentEventHandler
+    {
+        void OnItemAdded(ItemID item);
+        void OnItemRemovedAt(int index);
+        void OnItemsCleared();
+        void OnHotBagChanged();
+        void OnTargetAcquired();
+    }
+
     public class OrganizerAgent : Agent
     {
         public static List<OrganizerAgent> Agents { get; set; }
@@ -48,9 +55,6 @@ namespace Assistant.Agents
             }
         }
 
-        private ListBox m_SubList;
-        private Button m_BagBTN;
-        private Button m_ArrBTN;
         private readonly List<ItemID> m_Items;
         private uint m_Cont;
 
@@ -69,7 +73,7 @@ namespace Assistant.Agents
             Agent.OnItemCreated += new ItemCreatedEventHandler(CheckContOPL);
         }
 
-        public void CheckContOPL(Item item)
+        private void CheckContOPL(Item item)
         {
             if (item.Serial == m_Cont)
             {
@@ -101,41 +105,11 @@ namespace Assistant.Agents
 
         public override int Number { get; }
 
-        public override void OnSelected(ListBox subList, params Button[] buttons)
-        {
-            m_SubList = subList;
-            buttons[0].Text = Language.GetString(LocString.AddTarg);
-            buttons[0].Visible = true;
-            m_BagBTN = buttons[1];
-            m_ArrBTN = buttons[2];
-            if (m_Cont != 0)
-            {
-                buttons[1].Text = Language.GetString(LocString.ClearHB);
-            }
-            else
-            {
-                buttons[1].Text = Language.GetString(LocString.SetHB);
-            }
+        public bool HotBagSet => m_Cont != 0;
 
-            buttons[1].Visible = true;
-            buttons[2].Text = Language.GetString(LocString.OrganizeNow);
-            buttons[2].Visible = true;
-            buttons[3].Text = Language.GetString(LocString.Remove);
-            buttons[3].Visible = true;
-            buttons[4].Text = Language.GetString(LocString.Clear);
-            buttons[4].Visible = true;
-            buttons[5].Text = Language.GetString(LocString.StopNow);
-            buttons[5].Visible = true;
+        public IReadOnlyList<ItemID> Items => m_Items;
 
-            m_SubList.BeginUpdate();
-            m_SubList.Items.Clear();
-            for (int i = 0; i < m_Items.Count; i++)
-            {
-                m_SubList.Items.Add((ItemID) (m_Items[i]));
-            }
-
-            m_SubList.EndUpdate();
-        }
+        public IOrganizerAgentEventHandler EventHandler { get; set; }
 
         public void SetHotBag()
         {
@@ -143,53 +117,39 @@ namespace Assistant.Agents
             Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetBag));
         }
 
-        public override void OnButtonPress(int num)
+        public void AddItem()
         {
-            switch (num)
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
+        }
+
+        public void RemoveItemAt(int index)
+        {
+            if (Utility.IndexInRange(m_Items, index))
             {
-                case 1:
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
-                    break;
-                case 2:
-                    SetHotBag();
-                    break;
-                case 3:
-                    Organize();
-                    break;
-                case 4:
-                    if (m_SubList.SelectedIndex >= 0 && m_SubList.SelectedIndex < m_Items.Count)
-                    {
-                        m_Items.RemoveAt(m_SubList.SelectedIndex);
-                        m_SubList.Items.RemoveAt(m_SubList.SelectedIndex);
-                    }
-
-                    break;
-                case 5:
-                {
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        Item bag = World.FindItem(m_Cont);
-                        if (bag != null)
-                        {
-                            bag.ObjPropList.Remove(Language.Format(LocString.OrganizerHBA1, Number));
-                            bag.OPLChanged();
-                        }
-
-                        m_SubList.Items.Clear();
-                        m_Items.Clear();
-                        m_Cont = 0;
-                        m_BagBTN.Text = Language.GetString(LocString.SetHB);
-                    }
-
-                    break;
-                }
-
-                case 6:
-                    DragDropManager.GracefulStop();
-                    break;
+                m_Items.RemoveAt(index);
+                EventHandler?.OnItemRemovedAt(index);
             }
+        }
+
+        public void ClearItems()
+        {
+            Item bag = World.FindItem(m_Cont);
+            if (bag != null)
+            {
+                bag.ObjPropList.Remove(Language.Format(LocString.OrganizerHBA1, Number));
+                bag.OPLChanged();
+            }
+
+            m_Items.Clear();
+            m_Cont = 0;
+            EventHandler?.OnItemsCleared();
+            EventHandler?.OnHotBagChanged();
+        }
+
+        public void Stop()
+        {
+            DragDropManager.GracefulStop();
         }
 
         public void Organize()
@@ -269,10 +229,7 @@ namespace Assistant.Agents
 
         private void OnTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            if (Engine.MainWindow != null)
-            {
-                Engine.MainWindow.SafeAction(s => s.ShowMe());
-            }
+            EventHandler?.OnTargetAcquired();
 
             if (!location && serial.IsItem && World.Player != null)
             {
@@ -289,8 +246,7 @@ namespace Assistant.Agents
             else
             {
                 m_Items?.Add(gfx);
-
-                m_SubList?.Items.Add((ItemID)gfx);
+                EventHandler?.OnItemAdded((ItemID)gfx);
 
                 World.Player?.SendMessage(MsgLevel.Force, LocString.ItemAdded);
             }
@@ -298,10 +254,7 @@ namespace Assistant.Agents
 
         private void OnTargetBag(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            if (Engine.MainWindow != null)
-            {
-                Engine.MainWindow.SafeAction(s => s.ShowMe());
-            }
+            EventHandler?.OnTargetAcquired();
 
             if (!location && serial > 0 && serial <= 0x7FFFFF00)
             {
@@ -313,10 +266,7 @@ namespace Assistant.Agents
                 }
 
                 m_Cont = serial;
-                if (m_BagBTN != null)
-                {
-                    m_BagBTN.Text = Language.GetString(LocString.ClearHB);
-                }
+                EventHandler?.OnHotBagChanged();
 
                 if (World.Player != null)
                 {
@@ -336,10 +286,8 @@ namespace Assistant.Agents
         {
             m_Items.Clear();
             m_Cont = 0;
-            if (m_BagBTN != null)
-            {
-                m_BagBTN.Text = Language.GetString(LocString.SetHB);
-            }
+            EventHandler?.OnItemsCleared();
+            EventHandler?.OnHotBagChanged();
         }
 
         public override void Save(XmlTextWriter xml)
@@ -364,10 +312,7 @@ namespace Assistant.Agents
                 // ignored
             }
 
-            if (m_BagBTN != null)
-            {
-                m_BagBTN.Text = Language.GetString(m_Cont != 0 ? LocString.ClearHB : LocString.SetHB);
-            }
+            EventHandler?.OnHotBagChanged();
 
             foreach (XmlElement el in node.GetElementsByTagName("item"))
             {
