@@ -15,6 +15,7 @@ namespace Assistant.UI.Agents
                 case RestockAgent a: return new RestockAgentManager(a, controls);
                 case OrganizerAgent a: return new OrganizerAgentManager(a, controls);
                 case IgnoreAgent a: return new IgnoreAgentManager(a, controls);
+                case BuyAgent a: return new BuyAgentManager(a, controls);
                 default: return null;
             }
         }
