@@ -49,10 +49,7 @@ namespace Assistant.UI.Agents
 
         public static void OnButtonPress(int index)
         {
-            if (_currentManager != null)
-                _currentManager.OnButtonPress(index);
-            else
-                CurrentAgent.OnButtonPress(index);
+            _currentManager?.OnButtonPress(index);
         }
 
         private static Agent CurrentAgent => Agents.SelectedItem as Agent;
@@ -77,10 +74,7 @@ namespace Assistant.UI.Agents
                 SubList.Visible = true;
                 _currentManager?.Detach();
                 _currentManager = _factory.CreateAgentManager(CurrentAgent, _controls);
-                if (_currentManager != null)
-                    _currentManager?.OnSelected();
-                else
-                    CurrentAgent.OnSelected(SubList, Buttons);
+                _currentManager?.OnSelected();
             }
         }
     }
