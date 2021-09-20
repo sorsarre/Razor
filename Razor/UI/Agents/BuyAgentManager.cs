@@ -148,5 +148,23 @@ namespace Assistant.UI.Agents
         {
             _controls.SetButtonText(4, EnableText);
         }
+
+        public void OnTargetAcquired(BuyAgent.BuyEntry item)
+        {
+            OnTargetAcquired();
+
+            if (InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
+                Language.GetString(LocString.InputReq)))
+            {
+                ushort count = (ushort)InputBox.GetInt(0);
+                if (count <= 0)
+                {
+                    return;
+                }
+
+                item.Amount = count;
+                _agent.Add(item);
+            }
+        }
     }
 }
