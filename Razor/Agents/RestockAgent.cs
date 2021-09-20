@@ -27,6 +27,7 @@ namespace Assistant.Agents
     public interface IRestockAgentEventHandler
     {
         void OnTargetAcquired();
+        void OnTargetAcquired(RestockAgent.RestockItem item);
         void OnItemAdded(RestockAgent.RestockItem item);
         void OnItemRemovedAt(int index);
         void OnItemsCleared();
@@ -335,17 +336,8 @@ namespace Assistant.Agents
                 return;
             }
 
-            if (!InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                Language.GetString(LocString.InputReq), "1"))
-            {
-                return;
-            }
-
-            RestockItem ri = new RestockItem(gfx, InputBox.GetInt(1));
-
-            Add(ri);
-
-            EventHandler?.OnTargetAcquired();
+            RestockItem ri = new RestockItem(gfx, 1);
+            EventHandler?.OnTargetAcquired(ri);
         }
 
         public void Add(RestockItem item)

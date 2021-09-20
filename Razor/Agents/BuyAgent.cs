@@ -28,6 +28,7 @@ namespace Assistant.Agents
     public interface IBuyAgentEventHandler
     {
         void OnTargetAcquired();
+        void OnTargetAcquired(BuyAgent.BuyEntry item);
         void OnItemAdded(BuyAgent.BuyEntry item);
         void OnItemRemovedAt(int index);
         void OnItemsChanged();
@@ -386,21 +387,10 @@ namespace Assistant.Agents
 
         private void OnTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            EventHandler?.OnTargetAcquired();
-
             if (!location && !serial.IsMobile)
             {
-                if (InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                    Language.GetString(LocString.InputReq)))
-                {
-                    ushort count = (ushort) InputBox.GetInt(0);
-                    if (count <= 0)
-                    {
-                        return;
-                    }
-
-                    Add(new BuyEntry(gfx, count));
-                }
+                var entry = new BuyEntry(gfx, 0);
+                EventHandler?.OnTargetAcquired(entry);
             }
         }
 
