@@ -971,40 +971,6 @@ namespace Assistant.Macros
         {
             return $"{Language.GetString(LocString.AbsTarg)} (${_variableName})";
         }
-
-        /*private MenuItem[] m_MenuItems;
-        public override MenuItem[] GetContextMenuItems()
-        {
-            if (m_MenuItems == null)
-            {
-                m_MenuItems = new MacroMenuItem[]
-                {
-                    new MacroMenuItem( LocString.ReTarget, ReTarget )
-                };
-            }
-
-            return m_MenuItems;
-        }
-
-        private void ReTarget(object[] args)
-        {
-            Targeting.OneTimeTarget(!_target.Serial.IsValid, new Targeting.TargetResponseCallback(ReTargetResponse));
-            World.Player.SendMessage(MsgLevel.Force, LocString.SelTargAct);
-        }
-
-        private void ReTargetResponse(bool ground, Serial serial, Point3D pt, ushort gfx)
-        {
-            _target.Gfx = gfx;
-            _target.Serial = serial;
-            _target.Type = (byte)(ground ? 1 : 0);
-            _target.X = pt.X;
-            _target.Y = pt.Y;
-            _target.Z = pt.Z;
-
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
-
-            m_Parent?.Update();
-        }*/
     }
 
     /// <summary>
