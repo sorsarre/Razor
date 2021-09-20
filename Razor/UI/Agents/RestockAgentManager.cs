@@ -138,5 +138,20 @@ namespace Assistant.UI.Agents
         {
             _controls.SetButtonText(5, HotBagText);
         }
+
+        public void OnTargetAcquired(RestockAgent.RestockItem item)
+        {
+            OnTargetAcquired();
+
+            if (!InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
+                Language.GetString(LocString.InputReq), item.Amount.ToString()))
+            {
+                return;
+            }
+
+            item.Amount = InputBox.GetInt(item.Amount);
+
+            _agent.Add(item);
+        }
     }
 }
