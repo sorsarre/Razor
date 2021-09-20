@@ -39,7 +39,17 @@ namespace Assistant
             return m_Random.Next(max - min + 1) + min;
         }
 
+        public static bool IndexInRange<T>(List<T> list, int index)
+        {
+            return (0 <= index && index < list.Count);
+        }
+
         public static bool IndexInRange(ICollection collection, int index)
+        {
+            return (0 <= index && index < collection.Count);
+        }
+
+        public static bool IndexInRange<T>(ICollection<T> collection, int index)
         {
             return (0 <= index && index < collection.Count);
         }
