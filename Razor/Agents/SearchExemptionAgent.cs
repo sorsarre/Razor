@@ -20,20 +20,23 @@
 
 using System;
 using System.Collections;
-using System.Windows.Forms;
 using System.Xml;
-using Assistant.UI;
 
 namespace Assistant.Agents
 {
+    public interface ISearchExemptionAgentEventHandler
+    {
+        void OnItemAdded(string item);
+        void OnItemRemovedAt(int index);
+        void OnItemsCleared();
+        void OnTargetAcquired();
+    }
+
     public class SearchExemptionAgent : Agent
     {
-        public static int Count
-        {
-            get { return Instance.m_Items.Count; }
-        }
-
         public static SearchExemptionAgent Instance { get; private set; }
+
+        public ISearchExemptionAgentEventHandler EventHandler { get; set; }
 
         public static void Initialize()
         {
@@ -47,7 +50,7 @@ namespace Assistant.Agents
                 return true;
             }
 
-            return Instance == null ? false : Instance.CheckExempt(item);
+            return Instance != null && Instance.CheckExempt(item);
         }
 
         public static bool Contains(Item item)
@@ -57,7 +60,6 @@ namespace Assistant.Agents
                 : Instance.m_Items.Contains(item.Serial) || Instance.m_Items.Contains(item.ItemID);
         }
 
-        private ListBox m_SubList;
         private readonly ArrayList m_Items;
 
         public SearchExemptionAgent()
@@ -98,84 +100,45 @@ namespace Assistant.Agents
 
         public override int Number { get; }
 
-        public override void OnSelected(ListBox subList, params Button[] buttons)
+        public ArrayList Items => m_Items;
+
+        public void AddItem()
         {
-            m_SubList = subList;
-
-            buttons[0].Text = Language.GetString(LocString.AddTarg);
-            buttons[0].Visible = true;
-            buttons[1].Text = Language.GetString(LocString.AddTargType);
-            buttons[1].Visible = true;
-            buttons[2].Text = Language.GetString(LocString.Remove);
-            buttons[2].Visible = true;
-            buttons[3].Text = Language.GetString(LocString.RemoveTarg);
-            buttons[3].Visible = true;
-            buttons[4].Text = Language.GetString(LocString.ClearList);
-            buttons[4].Visible = true;
-
-            m_SubList.BeginUpdate();
-            m_SubList.Items.Clear();
-
-            for (int i = 0; i < m_Items.Count; i++)
-            {
-                Item item = null;
-                if (m_Items[i] is Serial)
-                {
-                    item = World.FindItem((Serial) m_Items[i]);
-                }
-
-                if (item != null)
-                {
-                    m_SubList.Items.Add(item.ToString());
-                }
-                else
-                {
-                    m_SubList.Items.Add(m_Items[i].ToString());
-                }
-            }
-
-            m_SubList.EndUpdate();
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
         }
 
-        public override void OnButtonPress(int num)
+        public void AddItemType()
         {
-            switch (num)
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetType));
+        }
+
+        public void RemoveItemAt(int index)
+        {
+            if (Utility.IndexInRange(m_Items, index))
             {
-                case 1:
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
-                    break;
-                case 2:
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetType));
-                    break;
-                case 3:
-                    if (m_SubList.SelectedIndex >= 0 && m_SubList.SelectedIndex < m_Items.Count)
-                    {
-                        m_Items.RemoveAt(m_SubList.SelectedIndex);
-                        m_SubList.Items.RemoveAt(m_SubList.SelectedIndex);
-                    }
-
-                    break;
-                case 4:
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemRem);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetRemove));
-                    break;
-                case 5:
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        m_SubList.Items.Clear();
-                        m_Items.Clear();
-                    }
-
-                    break;
+                m_Items.RemoveAt(index);
+                EventHandler?.OnItemRemovedAt(index);
             }
+        }
+
+        public void RemoveItem()
+        {
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemRem);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTargetRemove));
+        }
+
+        public void ClearItems()
+        {
+            m_Items.Clear();
+            EventHandler?.OnItemsCleared();
         }
 
         private void OnTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
+
             if (!location && serial.IsItem)
             {
                 m_Items.Add(serial);
@@ -184,11 +147,11 @@ namespace Assistant.Agents
                 if (item != null)
                 {
                     Client.Instance.SendToClient(new ContainerItem(item));
-                    m_SubList.Items.Add(item.ToString());
+                    EventHandler?.OnItemAdded(item.ToString());
                 }
                 else
                 {
-                    m_SubList.Items.Add(serial.ToString());
+                    EventHandler?.OnItemAdded(serial.ToString());
                 }
 
                 World.Player.SendMessage(MsgLevel.Force, LocString.ItemAdded);
@@ -197,29 +160,30 @@ namespace Assistant.Agents
 
         private void OnTargetType(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
 
             if (!serial.IsItem)
             {
                 return;
             }
 
-            m_Items.Add((ItemID) gfx);
-            m_SubList.Items.Add(((ItemID) gfx).ToString());
+            var itemID = (ItemID)gfx;
+            m_Items.Add(itemID);
+            EventHandler.OnItemAdded(itemID.ToString());
             World.Player.SendMessage(MsgLevel.Force, LocString.ItemAdded);
         }
 
         private void OnTargetRemove(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
+
             if (!location && serial.IsItem)
             {
                 for (int i = 0; i < m_Items.Count; i++)
                 {
                     if (m_Items[i] is Serial && (Serial) m_Items[i] == serial)
                     {
-                        m_Items.RemoveAt(i);
-                        m_SubList.Items.RemoveAt(i);
+                        RemoveItemAt(i);
                         World.Player.SendMessage(MsgLevel.Force, LocString.ItemRemoved);
 
                         Item item = World.FindItem(serial);

@@ -36,6 +36,7 @@ using Assistant.Agents;
 using Assistant.Core;
 using Assistant.Scripts;
 using Assistant.UI;
+using Assistant.UI.Agents;
 using Ultima;
 using ContainerLabels = Assistant.UI.ContainerLabels;
 using Exception = System.Exception;
@@ -92,6 +93,16 @@ namespace Assistant
             WaypointManager.ResetTimer();
             TextFilterManager.OnItemsChanged += this.RefreshTextFilters;
             MacroTabManager.SetControls(macroTree, macroVariables, actionList);
+            AgentTabManager.SetControls(
+                agentList,
+                agentGroup,
+                agentSubList,
+                agentB1,
+                agentB2,
+                agentB3,
+                agentB4,
+                agentB5,
+                agentB6);
 
             bool st = Config.GetBool("Systray");
             taskbar.Checked = this.ShowInTaskbar = !st;
@@ -665,10 +676,7 @@ namespace Assistant
             }
             else if (tabs.SelectedTab == agentsTab)
             {
-                int sel = agentList.SelectedIndex;
-                Agent.Redraw(agentList, agentGroup, agentB1, agentB2, agentB3, agentB4, agentB5, agentB6);
-                if (sel >= 0 && sel < agentList.Items.Count)
-                    agentList.SelectedIndex = sel;
+                AgentTabManager.Redraw();
             }
             else if (tabs.SelectedTab == advancedTab)
             {
@@ -1825,9 +1833,7 @@ namespace Assistant
         {
             try
             {
-                Agent.Select(agentList.SelectedIndex, agentList, agentSubList, agentGroup, agentB1, agentB2, agentB3,
-                    agentB4, agentB5, agentB6);
-
+                AgentTabManager.OnAgentSelected();
                 agentSetHotKey.Visible = true;
             }
             catch
@@ -1844,7 +1850,7 @@ namespace Assistant
             if (a == null)
                 agentList.SelectedIndex = -1;
             else
-                a.OnButtonPress(b);
+                AgentTabManager.OnButtonPress(b);
         }
 
         private void agentB1_Click(object sender, System.EventArgs e)
@@ -4579,10 +4585,10 @@ namespace Assistant
                 switch (agentList.SelectedItem)
                 {
                     case RestockAgent _:
-                        a.OnButtonPress(3);
+                        AgentTabManager.OnButtonPress(3);
                         break;
                     case BuyAgent _:
-                        a.OnButtonPress(2);
+                        AgentTabManager.OnButtonPress(2);
                         break;
                 }
             }

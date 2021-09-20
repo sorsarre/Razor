@@ -89,11 +89,11 @@ namespace Assistant.Scripts
 
             if (add)
             {
-                UseOnceAgent.Instance.OnAdd();
+                UseOnceAgent.Instance.AddItem();
             }
             else if (container)
             {
-                UseOnceAgent.Instance.OnAddContainer();
+                UseOnceAgent.Instance.AddContainer();
             }
             else
             {
@@ -179,7 +179,7 @@ namespace Assistant.Scripts
             }
             else if (add)
             {
-                ScavengerAgent.Instance.OnAddToHotBag();
+                ScavengerAgent.Instance.AddItem();
             }
             else if (status)
             {
@@ -194,7 +194,7 @@ namespace Assistant.Scripts
             }
             else if (set)
             {
-                ScavengerAgent.Instance.OnSetHotBag();
+                ScavengerAgent.Instance.SetHotBag();
             }
 
             return true;
