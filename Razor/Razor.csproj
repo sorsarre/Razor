@@ -379,6 +379,10 @@
     <Compile Include="UI\Agents\AgentControls.cs" />
     <Compile Include="UI\Agents\AgentManagerFactory.cs" />
     <Compile Include="UI\Agents\AgentTabManager.cs" />
+    <Compile Include="UI\Agents\BuyAgentManager.cs" />
+    <Compile Include="UI\Agents\IgnoreAgentManager.cs" />
+    <Compile Include="UI\Agents\OrganizerAgentManager.cs" />
+    <Compile Include="UI\Agents\RestockAgentManager.cs" />
     <Compile Include="UI\Agents\ScavengerAgentManager.cs" />
     <Compile Include="UI\Agents\SearchExemptionAgentManager.cs" />
     <Compile Include="UI\Agents\IAgentManager.cs" />

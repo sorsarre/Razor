@@ -20,12 +20,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Xml;
-using Assistant.UI;
 
 namespace Assistant.Agents
 {
+    public interface IRestockAgentEventHandler
+    {
+        void OnTargetAcquired();
+        void OnItemAdded(RestockAgent.RestockItem item);
+        void OnItemRemovedAt(int index);
+        void OnItemsCleared();
+        void OnHotBagChanged();
+    }
+
     public class RestockAgent : Agent
     {
         public static List<RestockAgent> Agents { get; set; }
@@ -47,9 +54,7 @@ namespace Assistant.Agents
             }
         }
 
-        private ListBox m_SubList;
         private readonly List<RestockItem> m_Items;
-        private Button m_HotBTN;
         private Serial m_HotBag;
 
         public RestockAgent(int num)
@@ -60,16 +65,16 @@ namespace Assistant.Agents
 
             HotKey.Add(HKCategory.Agents, HKSubCat.None,
                 $"{Language.GetString(LocString.RestockAgent)}-{Number:D2}",
-                new HotKeyCallback(OnHotKey));
+                new HotKeyCallback(Restock));
             HotKey.Add(HKCategory.Agents, HKSubCat.None,
                 $"{Language.GetString(LocString.SetRestockHB)}-{Number:D2}",
-                new HotKeyCallback(SetHB));
+                new HotKeyCallback(SetHotBag));
             PacketHandler.RegisterClientToServerViewer(0x09, new PacketViewerCallback(OnSingleClick));
 
             Agent.OnItemCreated += new ItemCreatedEventHandler(CheckHBOPL);
         }
 
-        public void CheckHBOPL(Item item)
+        private void CheckHBOPL(Item item)
         {
             if (item.Serial == m_HotBag)
             {
@@ -106,138 +111,47 @@ namespace Assistant.Agents
 
         public override int Number { get; }
 
-        public override void OnSelected(ListBox subList, params Button[] buttons)
+        public bool HotBagSet => m_HotBag != Serial.Zero;
+
+        public IList<RestockItem> Items => m_Items;
+
+        public IRestockAgentEventHandler EventHandler { get; set; }
+
+        public void AddItem()
         {
-            buttons[0].Text = Language.GetString(LocString.AddTarg);
-            buttons[0].Visible = true;
-            buttons[1].Text = Language.GetString(LocString.Remove);
-            buttons[1].Visible = true;
-            buttons[2].Text = Language.GetString(LocString.SetAmt);
-            buttons[2].Visible = true;
-            buttons[3].Text = Language.GetString(LocString.ClearList);
-            buttons[3].Visible = true;
-            m_HotBTN = buttons[4];
-            SetHBText();
-            buttons[4].Visible = true;
-            buttons[5].Text = Language.GetString(LocString.RestockNow);
-            buttons[5].Visible = true;
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnItemTarget));
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
+        }
 
-            m_SubList = subList;
-            subList.BeginUpdate();
-            subList.Items.Clear();
-            for (int i = 0; i < m_Items.Count; i++)
+        public void RemoveItemAt(int index)
+        {
+            if (Utility.IndexInRange(m_Items, index))
             {
-                subList.Items.Add(m_Items[i]);
-            }
-
-            subList.EndUpdate();
-
-            if (!Client.Instance.AllowBit(FeatureBit.RestockAgent) && Engine.MainWindow != null)
-            {
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    Engine.MainWindow.SafeAction(s => s.LockControl(buttons[i]));
-                }
-
-                Engine.MainWindow.SafeAction(s => s.LockControl(subList));
+                m_Items.RemoveAt(index);
+                EventHandler?.OnItemRemovedAt(index);
             }
         }
 
-        public override void OnButtonPress(int num)
+        public void ClearItems()
         {
-            switch (num)
+            m_Items.Clear();
+            EventHandler?.OnItemsCleared();
+        }
+
+        public void ToggleHotBag()
+        {
+            if (m_HotBag == Serial.Zero)
             {
-                case 1:
-                {
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnItemTarget));
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-                    break;
-                }
-
-                case 2:
-                {
-                    if (m_SubList.SelectedIndex >= 0 && m_SubList.SelectedIndex < m_Items.Count)
-                    {
-                        m_Items.RemoveAt(m_SubList.SelectedIndex);
-                        m_SubList.Items.RemoveAt(m_SubList.SelectedIndex);
-                    }
-
-                    break;
-                }
-
-                case 3:
-                {
-                    int i = m_SubList.SelectedIndex;
-                    if (i < 0 || i > m_Items.Count)
-                    {
-                        return;
-                    }
-
-                    RestockItem ri = (RestockItem) m_Items[i];
-                    if (!InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                        Language.GetString(LocString.InputReq), ri.Amount.ToString()))
-                    {
-                        return;
-                    }
-
-                    ri.Amount = InputBox.GetInt(ri.Amount);
-
-                    m_SubList.BeginUpdate();
-                    m_SubList.Items.Clear();
-                    for (int j = 0; j < m_Items.Count; j++)
-                    {
-                        m_SubList.Items.Add(m_Items[j]);
-                    }
-
-                    m_SubList.SelectedIndex = i;
-                    m_SubList.EndUpdate();
-                    break;
-                }
-
-                case 4:
-                {
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        m_SubList.Items.Clear();
-                        m_Items.Clear();
-                    }
-
-                    break;
-                }
-
-                case 5:
-                {
-                    if (m_HotBag == Serial.Zero)
-                    {
-                        SetHB();
-                    }
-                    else
-                    {
-                        m_HotBag = Serial.Zero;
-                        SetHBText();
-                    }
-
-                    break;
-                }
-
-                case 6:
-                {
-                    OnHotKey();
-                    break;
-                }
+                SetHotBag();
+            }
+            else
+            {
+                m_HotBag = Serial.Zero;
+                EventHandler?.OnHotBagChanged();
             }
         }
 
-        private void SetHBText()
-        {
-            if (m_HotBTN != null)
-            {
-                m_HotBTN.Text = Language.GetString(m_HotBag == Serial.Zero ? LocString.SetHB : LocString.ClearHB);
-            }
-        }
-
-        public void SetHB()
+        public void SetHotBag()
         {
             World.Player.SendMessage(MsgLevel.Force, LocString.TargCont);
             Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnHBTarget));
@@ -245,7 +159,7 @@ namespace Assistant.Agents
 
         private void OnHBTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
 
             Item hb = World.FindItem(m_HotBag);
             if (hb != null)
@@ -272,10 +186,10 @@ namespace Assistant.Agents
                 hb.OPLChanged();
             }
 
-            SetHBText();
+            EventHandler?.OnHotBagChanged();
         }
 
-        public void OnHotKey()
+        public void Restock()
         {
             if (Client.Instance.AllowBit(FeatureBit.RestockAgent))
             {
@@ -431,7 +345,7 @@ namespace Assistant.Agents
 
             Add(ri);
 
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
         }
 
         public void Add(RestockItem item)
@@ -446,7 +360,7 @@ namespace Assistant.Agents
             }
 
             m_Items.Add(item);
-            m_SubList.Items.Add(item);
+            EventHandler?.OnItemAdded(item);
 
             World.Player?.SendMessage(MsgLevel.Force, LocString.ItemAdded);
         }

@@ -60,11 +60,11 @@ namespace Assistant.Scripts
 
             if (setBag)
             {
-                RestockAgent.Agents[agentNum - 1].SetHB();
+                RestockAgent.Agents[agentNum - 1].SetHotBag();
             }
             else
             {
-                RestockAgent.Agents[agentNum - 1].OnHotKey();
+                RestockAgent.Agents[agentNum - 1].Restock();
             }
 
             return true;

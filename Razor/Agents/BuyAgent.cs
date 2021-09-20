@@ -21,12 +21,19 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Xml;
-using Assistant.UI;
 
 namespace Assistant.Agents
 {
+    public interface IBuyAgentEventHandler
+    {
+        void OnTargetAcquired();
+        void OnItemAdded(BuyAgent.BuyEntry item);
+        void OnItemRemovedAt(int index);
+        void OnItemsChanged();
+        void OnAgentToggled();
+    }
+
     public class BuyAgent : Agent
     {
         public class BuyEntry
@@ -103,8 +110,6 @@ namespace Assistant.Agents
             }
         }
 
-        private ListBox m_SubList;
-        private Button m_EnableBTN;
         private readonly List<BuyEntry> m_Items;
         private bool m_Enabled;
 
@@ -346,110 +351,42 @@ namespace Assistant.Agents
 
         public override int Number { get; }
 
-        public override void OnSelected(ListBox subList, params Button[] buttons)
+        public IBuyAgentEventHandler EventHandler { get; set; }
+
+        public bool Enabled => m_Enabled;
+
+        public IReadOnlyList<BuyEntry> Items => m_Items;
+
+        public void AddItem()
         {
-            m_SubList = subList;
-            m_EnableBTN = buttons[4];
+            World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
+            Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
+        }
 
-            buttons[0].Text = Language.GetString(LocString.AddTarg);
-            buttons[0].Visible = true;
-            buttons[1].Text = Language.GetString(LocString.Edit);
-            buttons[1].Visible = true;
-            buttons[2].Text = Language.GetString(LocString.Remove);
-            buttons[2].Visible = true;
-            buttons[3].Text = Language.GetString(LocString.ClearList);
-            buttons[3].Visible = true;
-            buttons[4].Text = Language.GetString(m_Enabled ? LocString.PushDisable : LocString.PushEnable);
-            buttons[4].Visible = true;
-
-            m_SubList.BeginUpdate();
-            m_SubList.Items.Clear();
-            for (int i = 0; i < m_Items.Count; i++)
+        public void RemoveItemAt(int index)
+        {
+            if (Utility.IndexInRange(m_Items, index))
             {
-                m_SubList.Items.Add(m_Items[i]);
-            }
-
-            m_SubList.EndUpdate();
-
-            if (!Client.Instance.AllowBit(FeatureBit.BuyAgent) && Engine.MainWindow != null)
-            {
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    Engine.MainWindow.SafeAction(s => s.LockControl(buttons[i]));
-                }
-
-                Engine.MainWindow.SafeAction(s => s.LockControl(subList));
+                m_Items.RemoveAt(index);
+                EventHandler?.OnItemRemovedAt(index);
             }
         }
 
-        public override void OnButtonPress(int num)
+        public void ClearItems()
         {
-            switch (num)
-            {
-                case 1:
-                    World.Player.SendMessage(MsgLevel.Force, LocString.TargItemAdd);
-                    Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnTarget));
-                    break;
-                case 2:
-                    if (m_SubList == null)
-                    {
-                        break;
-                    }
+            m_Items.Clear();
+            EventHandler?.OnItemsChanged();
+        }
 
-                    if (m_SubList.SelectedIndex >= 0)
-                    {
-                        BuyEntry e = (BuyEntry) m_Items[m_SubList.SelectedIndex];
-                        ushort amount = e.Amount;
-                        if (InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                            Language.GetString(LocString.InputReq), amount.ToString()))
-                        {
-                            e.Amount = (ushort) InputBox.GetInt(1);
-                            m_SubList.BeginUpdate();
-                            m_SubList.Items.Clear();
-                            for (int i = 0; i < m_Items.Count; i++)
-                            {
-                                m_SubList.Items.Add(m_Items[i]);
-                            }
-
-                            m_SubList.EndUpdate();
-                        }
-                    }
-
-                    break;
-                case 3:
-
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        if (m_SubList.SelectedIndex >= 0)
-                        {
-                            m_Items.RemoveAt(m_SubList.SelectedIndex);
-                            m_SubList.Items.RemoveAt(m_SubList.SelectedIndex);
-                            m_SubList.SelectedIndex = -1;
-                        }
-                    }
-
-                    break;
-                case 4:
-
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        m_SubList.Items.Clear();
-                        m_Items.Clear();
-                    }
-
-                    break;
-                case 5:
-                    m_Enabled = !m_Enabled;
-                    m_EnableBTN.Text = Language.GetString(m_Enabled ? LocString.PushDisable : LocString.PushEnable);
-                    break;
-            }
+        public void Toggle()
+        {
+            m_Enabled = !m_Enabled;
+            EventHandler?.OnAgentToggled();
         }
 
         private void OnTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
 
             if (!location && !serial.IsMobile)
             {
@@ -471,7 +408,7 @@ namespace Assistant.Agents
         {
             m_Items?.Add(entry);
 
-            m_SubList?.Items.Add(entry);
+            EventHandler?.OnItemAdded(entry);
 
             World.Player?.SendMessage(MsgLevel.Force, LocString.ItemAdded);
         }

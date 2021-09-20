@@ -20,15 +20,30 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
+using System.Linq;
 using System.Xml;
-using Assistant.UI;
 
 namespace Assistant.Agents
 {
+    public interface IIgnoreAgentEventHandler
+    {
+        void OnTargetAcquired();
+
+        void OnItemAdded(IgnoreAgent.NamedSerial item);
+        void OnItemsChanged();
+        void OnItemRemovedAt(int index);
+        void OnAgentToggled();
+    }
+
     public class IgnoreAgent : Agent
     {
         public static IgnoreAgent Instance { get; private set; }
+
+        public class NamedSerial
+        {
+            public Serial Serial { get; set; }
+            public string Name { get; set; }
+        }
 
         public static void Initialize()
         {
@@ -40,11 +55,9 @@ namespace Assistant.Agents
             return Instance?.IsSerialIgnored(ser) ?? false;
         }
 
-        private ListBox m_SubList;
         private readonly List<Serial> m_Chars;
         private readonly Dictionary<Serial, string> m_Names;
         private static bool m_Enabled;
-        private Button m_EnableBTN;
 
         public IgnoreAgent()
         {
@@ -65,11 +78,6 @@ namespace Assistant.Agents
             m_Names.Clear();
         }
 
-        public static bool IsEnabled()
-        {
-            return m_Enabled;
-        }
-
         public bool IsSerialIgnored(Serial ser)
         {
             if (m_Enabled)
@@ -87,33 +95,13 @@ namespace Assistant.Agents
             get { return Language.GetString(LocString.IgnoreAgent); }
         }
 
+        public bool Enabled => m_Enabled;
+
         public override int Number { get; }
 
-        public override void OnSelected(ListBox subList, params Button[] buttons)
-        {
-            m_EnableBTN = buttons[4];
+        public IIgnoreAgentEventHandler EventHandler { get; set; }
 
-            buttons[0].Text = Language.GetString(LocString.AddTarg);
-            buttons[0].Visible = true;
-            buttons[1].Text = Language.GetString(LocString.Remove);
-            buttons[1].Visible = true;
-            buttons[2].Text = Language.GetString(LocString.RemoveTarg);
-            buttons[2].Visible = true;
-            buttons[3].Text = Language.GetString(LocString.ClearList);
-            buttons[3].Visible = true;
-            buttons[4].Text = Language.GetString(m_Enabled ? LocString.PushDisable : LocString.PushEnable);
-            buttons[4].Visible = true;
-
-            m_SubList = subList;
-            subList.BeginUpdate();
-            subList.Items.Clear();
-            for (int i = 0; i < m_Chars.Count; i++)
-            {
-                Add2List((Serial) m_Chars[i]);
-            }
-
-            subList.EndUpdate();
-        }
+        public IEnumerable<NamedSerial> Items => from c in m_Chars select ToNamedSerial(c);
 
         public void AddToIgnoreList()
         {
@@ -127,72 +115,45 @@ namespace Assistant.Agents
             Targeting.OneTimeTarget(new Targeting.TargetResponseCallback(OnRemoveTarget));
         }
 
-        public override void OnButtonPress(int num)
+        public void RemoveItemAt(int index)
         {
-            switch (num)
+            if (Utility.IndexInRange(m_Chars, index))
             {
-                case 1:
+                try
                 {
-                    AddToIgnoreList();
-                    break;
+                    m_Names.Remove(m_Chars[index]);
+                }
+                catch
+                {
                 }
 
-                case 2:
+                m_Chars.RemoveAt(index);
+                EventHandler?.OnItemRemovedAt(index);
+            }
+        }
+
+        public void ClearItems()
+        {
+            foreach (Serial s in m_Chars)
+            {
+                Mobile m = World.FindMobile(s);
+                if (m != null)
                 {
-                    if (m_SubList.SelectedIndex >= 0 && m_SubList.SelectedIndex < m_Chars.Count)
+                    if (m.ObjPropList.Remove(Language.GetString(LocString.RazorIgnored)))
                     {
-                        try
-                        {
-                            m_Names.Remove(m_Chars[m_SubList.SelectedIndex]);
-                        }
-                        catch
-                        {
-                        }
-
-                        m_Chars.RemoveAt(m_SubList.SelectedIndex);
-                        m_SubList.Items.RemoveAt(m_SubList.SelectedIndex);
+                        m.OPLChanged();
                     }
-
-                    break;
-                }
-
-                case 3:
-                {
-                    RemoveFromIgnoreList();
-                    break;
-                }
-
-                case 4:
-                {
-                    if (MessageBox.Show(Language.GetString(LocString.Confirm), Language.GetString(LocString.ClearList),
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                    {
-                        foreach (Serial s in m_Chars)
-                        {
-                            Mobile m = World.FindMobile(s);
-                            if (m != null)
-                            {
-                                if (m.ObjPropList.Remove(Language.GetString(LocString.RazorIgnored)))
-                                {
-                                    m.OPLChanged();
-                                }
-                            }
-                        }
-
-                        m_Chars.Clear();
-                        m_SubList.Items.Clear();
-                    }
-
-                    break;
-                }
-
-                case 5:
-                {
-                    m_Enabled = !m_Enabled;
-                    m_EnableBTN.Text = Language.GetString(m_Enabled ? LocString.PushDisable : LocString.PushEnable);
-                    break;
                 }
             }
+
+            m_Chars.Clear();
+            EventHandler?.OnItemsChanged();
+        }
+
+        public void ToggleAgent()
+        {
+            m_Enabled = !m_Enabled;
+            EventHandler?.OnAgentToggled();
         }
 
         private void OPLCheckIgnore(Mobile m)
@@ -205,7 +166,7 @@ namespace Assistant.Agents
 
         private void OnAddTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
 
             if (!location && serial.IsMobile && serial != World.Player.Serial)
             {
@@ -214,7 +175,7 @@ namespace Assistant.Agents
                 {
                     m_Chars.Add(serial);
 
-                    Add2List(serial);
+                    NotifyNewSerial(serial);
 
                     Mobile m = World.FindMobile(serial);
                     if (m != null)
@@ -226,7 +187,7 @@ namespace Assistant.Agents
             }
         }
 
-        private void Add2List(Serial s)
+        private string GetName(Serial s)
         {
             Mobile m = World.FindMobile(s);
             string name = null;
@@ -248,15 +209,26 @@ namespace Assistant.Agents
 
             m_Names[s] = name;
 
-            if (m_SubList != null)
+            return name;
+        }
+
+        private NamedSerial ToNamedSerial(Serial s)
+        {
+            return new NamedSerial
             {
-                m_SubList.Items.Add($"\"{name}\" {s}");
-            }
+                Name = GetName(s),
+                Serial = s
+            };
+        }
+
+        private void NotifyNewSerial(Serial s)
+        {
+            EventHandler?.OnItemAdded(ToNamedSerial(s));
         }
 
         private void OnRemoveTarget(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            Engine.MainWindow.SafeAction(s => s.ShowMe());
+            EventHandler?.OnTargetAcquired();
 
             if (!location && serial.IsMobile && serial != World.Player.Serial)
             {
@@ -265,14 +237,7 @@ namespace Assistant.Agents
 
                 World.Player.SendMessage(MsgLevel.Force, LocString.RemoveFromIgnore);
 
-                m_SubList.BeginUpdate();
-                m_SubList.Items.Clear();
-                for (int i = 0; i < m_Chars.Count; i++)
-                {
-                    Add2List((Serial) m_Chars[i]);
-                }
-
-                m_SubList.EndUpdate();
+                EventHandler?.OnItemsChanged();
 
                 Mobile m = World.FindMobile(serial);
                 if (m != null)
