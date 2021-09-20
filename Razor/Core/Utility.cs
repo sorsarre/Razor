@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Windows.Forms;
 
@@ -52,6 +51,11 @@ namespace Assistant
         public static bool IndexInRange<T>(ICollection<T> collection, int index)
         {
             return (0 <= index && index < collection.Count);
+        }
+
+        internal static bool IndexInRange<T>(IReadOnlyList<T> list, int index)
+        {
+            return (0 <= index && index < list.Count);
         }
 
         public static int Random(int num)
