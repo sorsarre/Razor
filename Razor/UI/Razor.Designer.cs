@@ -451,6 +451,7 @@ namespace Assistant
             this.queueTargets = new System.Windows.Forms.CheckBox();
             this.lblTargetFormat = new System.Windows.Forms.Label();
             this.subOptionsMiscTab = new System.Windows.Forms.TabPage();
+            this.buyAgentIgnoreGold = new System.Windows.Forms.CheckBox();
             this.reequipHandsPotion = new System.Windows.Forms.CheckBox();
             this.autoOpenDoorWhenHidden = new System.Windows.Forms.CheckBox();
             this.lblStealthFormat = new System.Windows.Forms.Label();
@@ -1724,6 +1725,7 @@ namespace Assistant
             // subOptionsMiscTab
             // 
             this.subOptionsMiscTab.BackColor = System.Drawing.SystemColors.Control;
+            this.subOptionsMiscTab.Controls.Add(this.buyAgentIgnoreGold);
             this.subOptionsMiscTab.Controls.Add(this.reequipHandsPotion);
             this.subOptionsMiscTab.Controls.Add(this.autoOpenDoorWhenHidden);
             this.subOptionsMiscTab.Controls.Add(this.lblStealthFormat);
@@ -1762,6 +1764,17 @@ namespace Assistant
             this.subOptionsMiscTab.Size = new System.Drawing.Size(502, 288);
             this.subOptionsMiscTab.TabIndex = 2;
             this.subOptionsMiscTab.Text = "Additional Options  ";
+            // 
+            // buyAgentIgnoreGold
+            // 
+            this.buyAgentIgnoreGold.AutoSize = true;
+            this.buyAgentIgnoreGold.Location = new System.Drawing.Point(260, 244);
+            this.buyAgentIgnoreGold.Name = "buyAgentIgnoreGold";
+            this.buyAgentIgnoreGold.Size = new System.Drawing.Size(185, 19);
+            this.buyAgentIgnoreGold.TabIndex = 126;
+            this.buyAgentIgnoreGold.Text = "Buy Agents ignore player gold";
+            this.buyAgentIgnoreGold.UseVisualStyleBackColor = true;
+            this.buyAgentIgnoreGold.CheckedChanged += new System.EventHandler(this.buyAgentIgnoreGold_CheckedChanged);
             // 
             // reequipHandsPotion
             // 
@@ -3342,6 +3355,7 @@ namespace Assistant
             this.agentList.Size = new System.Drawing.Size(130, 23);
             this.agentList.TabIndex = 2;
             this.agentList.SelectedIndexChanged += new System.EventHandler(this.agentList_SelectedIndexChanged);
+            this.agentList.MouseDown += new System.Windows.Forms.MouseEventHandler(this.agentList_MouseDown);
             // 
             // agentGroup
             // 
@@ -3357,9 +3371,9 @@ namespace Assistant
             this.agentSubList.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.agentSubList.IntegralHeight = false;
             this.agentSubList.ItemHeight = 15;
-            this.agentSubList.Location = new System.Drawing.Point(6, 15);
+            this.agentSubList.Location = new System.Drawing.Point(6, 22);
             this.agentSubList.Name = "agentSubList";
-            this.agentSubList.Size = new System.Drawing.Size(356, 288);
+            this.agentSubList.Size = new System.Drawing.Size(356, 281);
             this.agentSubList.TabIndex = 0;
             this.agentSubList.MouseDown += new System.Windows.Forms.MouseEventHandler(this.agentSubList_MouseDown);
             // 
@@ -4415,7 +4429,7 @@ namespace Assistant
         '\"',
         '\'',
         '\''};
-            this.scriptEditor.AutoScrollMinSize = new System.Drawing.Size(25, 15);
+            this.scriptEditor.AutoScrollMinSize = new System.Drawing.Size(2, 15);
             this.scriptEditor.BackBrush = null;
             this.scriptEditor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(38)))), ((int)(((byte)(37)))), ((int)(((byte)(56)))));
             this.scriptEditor.CaretColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
@@ -4513,10 +4527,10 @@ namespace Assistant
             this.subScriptOptions.Controls.Add(this.autoSaveScriptPlay);
             this.subScriptOptions.Controls.Add(this.autoSaveScript);
             this.subScriptOptions.Controls.Add(this.scriptVariablesBox);
-            this.subScriptOptions.Location = new System.Drawing.Point(4, 24);
+            this.subScriptOptions.Location = new System.Drawing.Point(4, 22);
             this.subScriptOptions.Name = "subScriptOptions";
             this.subScriptOptions.Padding = new System.Windows.Forms.Padding(3);
-            this.subScriptOptions.Size = new System.Drawing.Size(498, 285);
+            this.subScriptOptions.Size = new System.Drawing.Size(498, 287);
             this.subScriptOptions.TabIndex = 1;
             this.subScriptOptions.Text = "Options";
             // 
@@ -5543,5 +5557,6 @@ namespace Assistant
         private FastColoredTextBoxNS.FastColoredTextBox scriptEditor;
         private Label scriptHotkey;
         private Button openScreenshotFolder;
+        private CheckBox buyAgentIgnoreGold;
     }
 }

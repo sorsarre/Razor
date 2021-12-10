@@ -273,7 +273,7 @@ namespace Assistant.Scripts
             uint gumpId = 0;
             bool strict = false;
 
-            if (vars[0].AsString().IndexOf("any", StringComparison.InvariantCultureIgnoreCase) != -1)
+            if (vars[0].AsString().IndexOf("any", StringComparison.OrdinalIgnoreCase) != -1)
             {
                 strict = false;
             }
@@ -309,7 +309,7 @@ namespace Assistant.Scripts
             uint menuId = 0;
 
             // Look for a specific menu
-            menuId = vars[0].AsString().IndexOf("any", StringComparison.InvariantCultureIgnoreCase) != -1
+            menuId = vars[0].AsString().IndexOf("any", StringComparison.OrdinalIgnoreCase) != -1
                 ? 0
                 : Utility.ToUInt32(vars[0].AsString(), 0);
 
@@ -335,7 +335,7 @@ namespace Assistant.Scripts
             bool strict = false;
 
             // Look for a specific prompt
-            if (vars[0].AsString().IndexOf("any", StringComparison.InvariantCultureIgnoreCase) != -1)
+            if (vars[0].AsString().IndexOf("any", StringComparison.OrdinalIgnoreCase) != -1)
             {
                 strict = false;
             }
@@ -441,7 +441,7 @@ namespace Assistant.Scripts
 
             if (vars.Length == 2)
             {
-                if (vars[1].AsString().IndexOf("pack", StringComparison.InvariantCultureIgnoreCase) > 0)
+                if (vars[1].AsString().IndexOf("pack", StringComparison.OrdinalIgnoreCase) > 0)
                 {
                     backpack = true;
                 }
@@ -545,7 +545,7 @@ namespace Assistant.Scripts
                 throw new RunTimeError("Usage: drop (serial) (x y z/layername)");
             }
 
-            Serial serial = vars[0].AsString().IndexOf("ground", StringComparison.InvariantCultureIgnoreCase) > 0
+            Serial serial = vars[0].AsString().IndexOf("ground", StringComparison.OrdinalIgnoreCase) > 0
                 ? uint.MaxValue
                 : vars[0].AsSerial();
 

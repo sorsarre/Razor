@@ -180,7 +180,7 @@ namespace Assistant
             AddProperty("StealthOverhead", false);
 
             AddProperty("ShowBuffDebuffOverhead", true);
-            AddProperty("BuffDebuffFormat", "[{action}{name} ({duration}s)]");
+            AddProperty("BuffDebuffFormat", "[{action}{name} {duration}]");
 
             AddProperty("BlockOpenCorpsesTwice", false);
 
@@ -313,6 +313,10 @@ namespace Assistant
             AddProperty("EnableTextFilter", false);
 
             AddProperty("DisableScriptTooltips", false);
+
+            AddProperty("BuyAgentsIgnoreGold", false);
+            
+            AddProperty("OverrideBuffDebuffFormat", false);
 
             Counter.Default();
             Filter.DisableAll();

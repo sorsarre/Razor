@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Assistant.Agents;
+using Assistant.Gumps.Internal;
 
 namespace Assistant.UI.Agents
 {
@@ -77,6 +78,42 @@ namespace Assistant.UI.Agents
             }
         }
 
+        private bool OnItemTargetAmountResponse(int gfx, string input)
+        {
+            if (ushort.TryParse(input, out ushort count))
+            {
+                if (count <= 0)
+                {
+                    return false;
+                }
+
+                _agent.Add(new BuyAgent.BuyEntry((ushort)gfx, count));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool OnItemChangeAmountResponse(int entryId, string input)
+        {
+            if (ushort.TryParse(input, out ushort amount))
+            {
+                if (amount <= 0)
+                {
+                    return false;
+                }
+
+                var e = SubList.Items[entryId] as BuyAgent.BuyEntry;
+                e.Amount = amount;
+                RefreshItems();
+
+                return true;
+            }
+
+            return false;
+        }
+
         private void EditItem()
         {
             if (!Utility.IndexInRange(SubList.Items, SubList.SelectedIndex)
@@ -87,12 +124,8 @@ namespace Assistant.UI.Agents
 
             var entry = _agent.Items[SubList.SelectedIndex];
             ushort amount = entry.Amount;
-            if (InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                Language.GetString(LocString.InputReq), amount.ToString()))
-            {
-                entry.Amount = (ushort)InputBox.GetInt(1);
-                RefreshItems();
-            }
+            InputDialogGump inputGump = new InputDialogGump(OnItemChangeAmountResponse, m_SubList.SelectedIndex, Language.GetString(LocString.EnterAmount), entry.Amount.ToString());
+            inputGump.SendGump();
         }
 
         private void RemoveItem()
@@ -125,7 +158,8 @@ namespace Assistant.UI.Agents
 
         public void OnItemAdded(BuyAgent.BuyEntry item)
         {
-            SubList.SafeAction(s => s.Items.Add(item));
+            InputDialogGump inputGump = new InputDialogGump(OnItemTargetAmountResponse, item.Id, Language.GetString(LocString.EnterAmount), "0");
+            inputGump.SendGump();
         }
 
         public void OnItemRemovedAt(int index)

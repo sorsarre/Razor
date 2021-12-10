@@ -588,6 +588,12 @@ namespace Assistant
         GumpSysMsg,
         GumpHotKeys,
         GumpBoatControl,
+        BuyAgentAttempt,
+        NextTargetFriendly,
+        PrevTargetFriendly,
+        PauseScript,
+        ResumeScriptMessage,
+        PauseScriptMessage,
         __End
     }
 

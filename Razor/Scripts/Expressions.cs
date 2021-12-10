@@ -53,6 +53,7 @@ namespace Assistant.Scripts
             Interpreter.RegisterExpressionHandler("dex", Dex);
 
             Interpreter.RegisterExpressionHandler("weight", Weight);
+            Interpreter.RegisterExpressionHandler("maxweight", MaxWeight);
 
             Interpreter.RegisterExpressionHandler("skill", SkillExpression);
             Interpreter.RegisterExpressionHandler("count", CountExpression);
@@ -69,6 +70,21 @@ namespace Assistant.Scripts
             Interpreter.RegisterExpressionHandler("position", Position);
 
             Interpreter.RegisterExpressionHandler("queued", Queued);
+
+            Interpreter.RegisterExpressionHandler("varexist", VarExist);
+            Interpreter.RegisterExpressionHandler("varexists", VarExist);
+        }
+
+        private static bool VarExist(string expression, Variable[] vars, bool quiet, bool force)
+        {
+            if (vars.Length != 1)
+            {
+                throw new RunTimeError("Usage: varexist ('name')");
+            }
+
+            string varName = vars[0].AsString(false);
+            
+            return Interpreter.AliasHandlerExist(varName);
         }
 
         private static bool Queued(string expression, Variable[] vars, bool quiet, bool force)
@@ -83,9 +99,11 @@ namespace Assistant.Scripts
                 throw new RunTimeError("Usage: findbuff/finddebuff ('name of buff')");
             }
 
-            foreach (BuffsDebuffs buff in World.Player.BuffsDebuffs)
+            string name = vars[0].AsString();
+
+            foreach (BuffDebuff buff in World.Player.BuffsDebuffs)
             {
-                if (buff.ClilocMessage1.IndexOf(vars[0].AsString(), StringComparison.CurrentCultureIgnoreCase) != -1)
+                if (buff.ClilocMessage1.IndexOf(name, StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     return true;
                 }
@@ -111,7 +129,7 @@ namespace Assistant.Scripts
 
             if (vars.Length == 2)
             {
-                if (vars[1].AsString().IndexOf("pack", StringComparison.InvariantCultureIgnoreCase) > 0)
+                if (vars[1].AsString().IndexOf("pack", StringComparison.OrdinalIgnoreCase) > 0)
                 {
                     backpack = true;
                 }
@@ -288,6 +306,14 @@ namespace Assistant.Scripts
             return World.Player.Weight;
         }
 
+        private static int MaxWeight(string expression, Variable[] vars, bool quiet, bool force)
+        {
+            if (World.Player == null)
+                return 0;
+
+            return World.Player.MaxWeight;
+        }
+
         private static double SkillExpression(string expression, Variable[] vars, bool quiet, bool force)
         {
             if (vars.Length < 1)
@@ -298,7 +324,7 @@ namespace Assistant.Scripts
 
             foreach (SkillInfo skill in Skills.SkillEntries)
             {
-                if (skill.Name.IndexOf(vars[0].AsString(), StringComparison.CurrentCultureIgnoreCase) != -1)
+                if (skill.Name.IndexOf(vars[0].AsString(), StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     return World.Player.Skills[skill.Index].Value;
                 }

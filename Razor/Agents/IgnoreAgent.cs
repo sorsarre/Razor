@@ -97,6 +97,8 @@ namespace Assistant.Agents
 
         public bool Enabled => m_Enabled;
 
+        public override string Alias { get; set; }
+
         public override int Number { get; }
 
         public IIgnoreAgentEventHandler EventHandler { get; set; }

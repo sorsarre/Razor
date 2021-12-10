@@ -101,10 +101,11 @@ namespace Assistant.Agents
 
         public override string ToString()
         {
-            return Name;
+            return !string.IsNullOrEmpty(Alias) ? $"{Name} ({Alias})" : Name;
         }
 
         public abstract string Name { get; }
+        public abstract string Alias { get; set; }
         public abstract int Number { get; }
         public abstract void Save(XmlTextWriter xml);
         public abstract void Load(XmlElement node);

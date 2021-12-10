@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Windows.Forms;
 using Assistant.Agents;
+using Assistant.Gumps.Internal;
 
 namespace Assistant.UI.Agents
 {
@@ -71,16 +72,8 @@ namespace Assistant.UI.Agents
 
             var index = SubList.SelectedIndex;
             var item = _agent.Items[index];
-            if (!InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                    Language.GetString(LocString.InputReq), item.Amount.ToString()))
-            {
-                return;
-            }
-
-            item.Amount = InputBox.GetInt(item.Amount);
-
-            RefreshItemList();
-            SubList.SafeAction(s => s.SelectedIndex = index);
+            InputDialogGump inputGump = new InputDialogGump(OnItemTargetChangeResponse, SubList.SelectedIndex, Language.GetString(LocString.EnterAmount), item.Amount.ToString());
+            inputGump.SendGump();
         }
 
         private void RefreshItemList()
@@ -111,6 +104,41 @@ namespace Assistant.UI.Agents
             }
         }
 
+        private bool OnItemTargetAmountResponse(int gfx, string input)
+        {
+            if (int.TryParse(input, out int amount))
+            {
+                var ri = new RestockAgent.RestockItem((ushort)gfx, amount);
+                _agent.Add(ri);
+
+                OnTargetAcquired();
+                return true;
+            }
+
+            OnTargetAcquired();
+
+            return false;
+        }
+
+        public bool OnItemTargetChangeResponse(int restockId, string input)
+        {
+            if (int.TryParse(input, out int amount))
+            {
+                var ri = SubList.Items[restockId] as RestockAgent.RestockItem;
+
+                ri.Amount = amount;
+
+                RefreshItemList();
+                OnTargetAcquired();
+
+                return true;
+            }
+
+            OnTargetAcquired();
+
+            return false;
+        }
+
         public void OnTargetAcquired()
         {
             Engine.MainWindow.SafeAction(s => s.ShowMe());
@@ -134,6 +162,11 @@ namespace Assistant.UI.Agents
             RefreshItemList();
         }
 
+        public void OnItemsChanged()
+        {
+            RefreshItemList();
+        }
+
         public void OnHotBagChanged()
         {
             _controls.SetButtonText(5, HotBagText);
@@ -143,15 +176,8 @@ namespace Assistant.UI.Agents
         {
             OnTargetAcquired();
 
-            if (!InputBox.Show(Engine.MainWindow, Language.GetString(LocString.EnterAmount),
-                Language.GetString(LocString.InputReq), item.Amount.ToString()))
-            {
-                return;
-            }
-
-            item.Amount = InputBox.GetInt(item.Amount);
-
-            _agent.Add(item);
+            InputDialogGump inputGump = new InputDialogGump(OnItemTargetAmountResponse, item.ItemID, Language.GetString(LocString.EnterAmount), "1");
+            inputGump.SendGump();
         }
     }
 }

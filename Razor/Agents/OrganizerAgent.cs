@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Xml;
+using Assistant.Scripts;
 
 namespace Assistant.Agents
 {
@@ -73,7 +74,7 @@ namespace Assistant.Agents
             Agent.OnItemCreated += new ItemCreatedEventHandler(CheckContOPL);
         }
 
-        private void CheckContOPL(Item item)
+        public void CheckContOPL(Item item)
         {
             if (item.Serial == m_Cont)
             {
@@ -102,6 +103,8 @@ namespace Assistant.Agents
         {
             get { return $"{Language.GetString(LocString.Organizer)}-{Number}"; }
         }
+
+        public override string Alias { get; set; }
 
         public override int Number { get; }
 
@@ -254,7 +257,10 @@ namespace Assistant.Agents
 
         private void OnTargetBag(bool location, Serial serial, Point3D loc, ushort gfx)
         {
-            EventHandler?.OnTargetAcquired();
+            if (!ScriptManager.Running)
+            {
+                EventHandler?.OnTargetAcquired();
+            }
 
             if (!location && serial > 0 && serial <= 0x7FFFFF00)
             {
@@ -293,6 +299,8 @@ namespace Assistant.Agents
         public override void Save(XmlTextWriter xml)
         {
             xml.WriteAttributeString("hotbag", m_Cont.ToString());
+            xml.WriteAttributeString("alias", Alias);
+
             for (int i = 0; i < m_Items.Count; i++)
             {
                 xml.WriteStartElement("item");
@@ -310,6 +318,15 @@ namespace Assistant.Agents
             catch
             {
                 // ignored
+            }
+
+            try
+            {
+                Alias = node.GetAttribute("alias");
+            }
+            catch
+            {
+                Alias = string.Empty;
             }
 
             EventHandler?.OnHotBagChanged();

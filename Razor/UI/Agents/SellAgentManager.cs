@@ -1,4 +1,5 @@
 ﻿using Assistant.Agents;
+using Assistant.Gumps.Internal;
 using System.Windows.Forms;
 
 namespace Assistant.UI.Agents
@@ -59,6 +60,8 @@ namespace Assistant.UI.Agents
                     break;
 
                 case 5:
+                    InputDialogGump gump = new InputDialogGump(OnChangeSellMaxAmount, 0, Language.GetString(LocString.EnterAmount), Config.GetInt("SellAgentMax").ToString());
+                    gump.SendGump();
                     if (InputBox.Show(Language.GetString(LocString.EnterAmount)))
                     {
                         _agent.SetAmount(InputBox.GetInt(100));
@@ -69,6 +72,19 @@ namespace Assistant.UI.Agents
                     _agent.Toggle();
                     break;
             }
+        }
+
+        private bool OnChangeSellMaxAmount(int gfx, string amount)
+        {
+            if (int.TryParse(amount, out int parsedAmount))
+            {
+                Config.SetProperty("SellAgentMax", parsedAmount);
+                AmountButton.Text = Language.Format(LocString.SellAmount, Config.GetInt("SellAgentMax"));
+
+                return true;
+            }
+
+            return false;
         }
 
         public void OnSelected()

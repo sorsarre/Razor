@@ -1099,6 +1099,11 @@ namespace Assistant.Scripts.Engine
             _aliasHandlers.Remove(keyword);
         }
 
+        public static bool AliasHandlerExist(string alias)
+        {
+            return _aliasHandlers.TryGetValue(alias, out _);
+        }
+
         public static void PushScope(ASTNode node)
         {
             _currentScope = new Scope(_currentScope, node);
@@ -1212,6 +1217,16 @@ namespace Assistant.Scripts.Engine
         {
             _activeScript = null;
             _currentScope = _scope;
+            _executionState = ExecutionState.RUNNING;
+        }
+
+        public static void PauseScript()
+        {
+            _pauseTimeout = DateTime.MaxValue.Ticks;
+            _executionState = ExecutionState.PAUSED;
+        }
+        public static void ResumeScript()
+        {
             _executionState = ExecutionState.RUNNING;
         }
 

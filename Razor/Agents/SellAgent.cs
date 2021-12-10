@@ -171,6 +171,8 @@ namespace Assistant.Agents
             get { return Language.GetString(LocString.Sell); }
         }
 
+        public override string Alias { get; set; }
+
         public override int Number { get; }
 
         public bool Enabled => m_Enabled;

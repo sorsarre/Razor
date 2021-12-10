@@ -1,10 +1,8 @@
-name: Build
+name: build
 
 on:
   push:
     branches: [ master ]
-  #pull_request:
-  # branches: [ master ]
 
 jobs:
 
@@ -14,12 +12,10 @@ jobs:
       matrix:
         configuration: [Release]
 
-    runs-on: windows-latest 
-
-    #if: ${{ !contains(github.event.head_commit.message, '[chore]') }}
+    runs-on: windows-2022
 
     env:
-      Solution_Name: Razor.sln 
+      Solution_Name: Razor.sln       
 
     steps:
     - name: Checkout
@@ -30,15 +26,20 @@ jobs:
     - name: Install .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
 
     - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v1.1
 
     - name: Restore Razor
       run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
+        
+    - name: Set AssemblyInfo
+      uses: dannevesdantas/set-version-assemblyinfo@v.1.0.0
+      with:                     
+        version: '1.7.2.${{ github.run_number }}'
 
     - name: Build Razor
       run: msbuild $env:Solution_Name /t:Build /p:Configuration=$env:Configuration
@@ -67,5 +68,4 @@ jobs:
         prerelease: true
         tag: Razor-dev-preview
         token: ${{ secrets.GITHUB_TOKEN }}
-
 

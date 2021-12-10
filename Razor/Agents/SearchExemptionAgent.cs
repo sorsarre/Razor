@@ -98,6 +98,8 @@ namespace Assistant.Agents
             get { return Language.GetString(LocString.AutoSearchEx); }
         }
 
+        public override string Alias { get; set; }
+
         public override int Number { get; }
 
         public ArrayList Items => m_Items;

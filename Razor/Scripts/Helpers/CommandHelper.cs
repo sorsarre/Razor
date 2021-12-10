@@ -214,6 +214,17 @@ namespace Assistant.Scripts.Helpers
                         }
 
                         break;
+                    case "friendly":
+                        if (next)
+                        {
+                            Targeting.NextTargetFriendly();
+                        }
+                        else
+                        {
+                            Targeting.PrevTargetFriendly();
+                        }
+
+                        break;
                     case "nonfriendly":
                         if (next)
                         {
@@ -309,7 +320,7 @@ namespace Assistant.Scripts.Helpers
 
             if (args.Length == 3)
             {
-                if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     if (closest)
                     {
@@ -328,7 +339,7 @@ namespace Assistant.Scripts.Helpers
                         Targeting.NextPrevTargetNotorietyHumanoid(false, notoTypes.ToArray());
                     }
                 }
-                else if (args[2].AsString().IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                else if (args[2].AsString().IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     if (closest)
                     {
@@ -392,7 +403,7 @@ namespace Assistant.Scripts.Helpers
                     case "enemy":
                         if (args.Length == 3)
                         {
-                            if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                            if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -412,7 +423,7 @@ namespace Assistant.Scripts.Helpers
                                 }
                             }
                             else if (args[2].AsString()
-                                .IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                                .IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -467,7 +478,7 @@ namespace Assistant.Scripts.Helpers
                     case "friendly":
                         if (args.Length == 3)
                         {
-                            if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                            if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -487,7 +498,7 @@ namespace Assistant.Scripts.Helpers
                                 }
                             }
                             else if (args[2].AsString()
-                                .IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                                .IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -524,7 +535,7 @@ namespace Assistant.Scripts.Helpers
                     case "grey":
                         if (args.Length == 3)
                         {
-                            if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                            if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -544,7 +555,7 @@ namespace Assistant.Scripts.Helpers
                                 }
                             }
                             else if (args[2].AsString()
-                                .IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                                .IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -580,7 +591,7 @@ namespace Assistant.Scripts.Helpers
                     case "criminal":
                         if (args.Length == 3)
                         {
-                            if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                            if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -600,7 +611,7 @@ namespace Assistant.Scripts.Helpers
                                 }
                             }
                             else if (args[2].AsString()
-                                .IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                                .IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -637,7 +648,7 @@ namespace Assistant.Scripts.Helpers
                     case "innocent":
                         if (args.Length == 3)
                         {
-                            if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                            if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -657,7 +668,7 @@ namespace Assistant.Scripts.Helpers
                                 }
                             }
                             else if (args[2].AsString()
-                                .IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                                .IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -694,7 +705,7 @@ namespace Assistant.Scripts.Helpers
                     case "murderer":
                         if (args.Length == 3)
                         {
-                            if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                            if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -714,7 +725,7 @@ namespace Assistant.Scripts.Helpers
                                 }
                             }
                             else if (args[2].AsString()
-                                .IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                                .IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -750,7 +761,7 @@ namespace Assistant.Scripts.Helpers
                     case "nonfriendly":
                         if (args.Length == 3)
                         {
-                            if (args[2].AsString().IndexOf("human", StringComparison.InvariantCultureIgnoreCase) != -1)
+                            if (args[2].AsString().IndexOf("human", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {
@@ -770,7 +781,7 @@ namespace Assistant.Scripts.Helpers
                                 }
                             }
                             else if (args[2].AsString()
-                                .IndexOf("monster", StringComparison.InvariantCultureIgnoreCase) != -1)
+                                .IndexOf("monster", StringComparison.OrdinalIgnoreCase) != -1)
                             {
                                 if (closest)
                                 {

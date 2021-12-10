@@ -129,6 +129,8 @@ namespace Assistant.Agents
             get { return Language.GetString(LocString.Scavenger); }
         }
 
+        public override string Alias { get; set; }
+
         public override int Number { get; }
 
         public IReadOnlyList<ItemID> Items => m_Items;

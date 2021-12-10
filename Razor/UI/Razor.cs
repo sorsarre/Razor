@@ -519,6 +519,8 @@ namespace Assistant
 
             disableScriptTooltips.SafeAction(s => { s.Checked = Config.GetBool("DisableScriptTooltips"); });
 
+            buyAgentIgnoreGold.SafeAction(s => { s.Checked = Config.GetBool("BuyAgentsIgnoreGold"); });
+
             // Disable SmartCPU in case it was enabled before the feature was removed
             Client.Instance.SetSmartCPU(false);
 
@@ -5558,7 +5560,7 @@ namespace Assistant
             Config.SetProperty("BandageEndMessage", bandageEndMessage.Text);
         }
 
-        private BuffDebuff _buffDebuffOptions = null;
+        private BuffDebuffOptions _buffDebuffOptions = null;
 
         private void BuffDebuffOptions_Click(object sender, EventArgs e)
         {
@@ -5568,7 +5570,7 @@ namespace Assistant
             }
             else
             {
-                _buffDebuffOptions = new BuffDebuff();
+                _buffDebuffOptions = new BuffDebuffOptions();
 
                 _buffDebuffOptions.SafeAction(s => s.Show());
             }
@@ -7208,6 +7210,55 @@ namespace Assistant
             {
                 MessageBox.Show(this, ex.Message, "Unable to open directory", MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
+            }
+        }
+
+        private void buyAgentIgnoreGold_CheckedChanged(object sender, EventArgs e)
+        {
+            Config.SetProperty("BuyAgentsIgnoreGold", buyAgentIgnoreGold.Checked);
+        }
+
+        private ContextMenuStrip m_AgentsMenu = null;
+
+        private void agentList_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                Agent agent = (Agent)agentList.SelectedItem;
+
+                if (agent != null && (agent is OrganizerAgent || agent is RestockAgent || agent is BuyAgent))
+                {
+                    m_AgentsMenu = new ContextMenuStrip();
+                    m_AgentsMenu.Items.Add($"Set alias for '{agent.Name}'", null, OnAgentAlias);
+                    m_AgentsMenu.Show(agentList, new Point(e.X, e.Y));
+                }
+            }
+        }
+
+        private void OnAgentAlias(object sender, EventArgs e)
+        {
+            Agent agent = (Agent)agentList.SelectedItem;
+
+            if (InputBox.Show(this, $"Set '{agent}' Alias", "Enter an alias for this agent"))
+            {
+                string alias = InputBox.GetString();
+
+                if (string.IsNullOrEmpty(alias) || alias.IndexOfAny(Path.GetInvalidPathChars()) != -1 || alias.IndexOfAny(m_InvalidNameChars) != -1)
+                {
+                    MessageBox.Show(this, Language.GetString(LocString.InvalidChars),
+                        Language.GetString(LocString.Invalid), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    agent.Alias = alias;
+
+                    int sel = agentList.SelectedIndex;
+
+                    Agent.Redraw(agentList, agentGroup, agentB1, agentB2, agentB3, agentB4, agentB5, agentB6);
+                    if (sel >= 0 && sel < agentList.Items.Count)
+                        agentList.SelectedIndex = sel;
+                }
+
             }
         }
     }
